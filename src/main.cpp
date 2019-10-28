@@ -652,6 +652,17 @@ void loop() {
   }
 }
 
+/*
+ * Update the digit display
+ * 
+ * Takes as arguments:
+ * digit - the number we're displaying from 0 to max-1 (based on number of pixels in this array)
+ * color - NeoPixel RGB color value
+ * pixelList - an array of the NeoPixel IDs making up this digit
+ * max - the number of NeoPixels in this digit array
+ * randomize - use a random order, or the pixelList array-defined order
+ */
+
 void displayDigit(int digit, uint32_t color, int pixelList[], int max, bool randomize) {
   /*
   Serial.print(F("Displaying digit "));
@@ -661,11 +672,13 @@ void displayDigit(int digit, uint32_t color, int pixelList[], int max, bool rand
   Serial.println();
   */
 
+  // Create an array of digits 0 to max-1.
   int digitOrder[max];
   for (int i = 0; i < max; i++) {
     digitOrder[i] = i;
   }
 
+  // Shuffle that array if we're randomizing the digits
   if (randomize) {
     //Serial.println(F("Randomizing digit order"));
     for (int i = 0; i < max; i++) {
@@ -680,12 +693,19 @@ void displayDigit(int digit, uint32_t color, int pixelList[], int max, bool rand
     //Serial.println();
   }
 
+  // Clear this set of digits
   clearPixels(pixelList, max);
 
+  // For however many digits we're setting, walk through the
+  // (possibly) shuffled list of 0..max-1, and turn that pixel on
   for (int i = 0; i < digit; i++) {
     strip.setPixelColor(pixelList[digitOrder[i]], color);
   }
 }
+
+/*
+ * Set all pixels in arr to off (black)
+ */
 
 void clearPixels(int arr[], int max) {
   for (int i = 0; i < max; i++){
@@ -693,14 +713,22 @@ void clearPixels(int arr[], int max) {
   }
 }
 
+/*
+ * Print the values in an array to the Serial output
+ */
+
 void printArray(int arr[], int max) {
-  for (int i = 0; i < max; i++) {
-    Serial.print(arr[i]);
-    Serial.print(F(", "));
+  if (Serial) {
+    for (int i = 0; i < max; i++) {
+      Serial.print(arr[i]);
+      Serial.print(F(", "));
+    }
   }
 }
 
-// Fetch time from RTC into global vars
+/*
+ * Fetch time from RTC into global vars
+ */
 void getRTCTime() {
     DateTime now = rtc.now();
 
@@ -720,6 +748,10 @@ void getRTCTime() {
         Serial.println(second);
     }
 }
+
+/*
+ * Take time in global vars and store in RTC chip
+ */
 
 void setRTCTime() {
     // This clock isn't date-aware so it doesn't matter what date we set here
