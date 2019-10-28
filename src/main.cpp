@@ -81,6 +81,11 @@ uint32_t hourOnesColor   = strip.Color(255, 0, 0);     // Green
 uint32_t minuteTensColor = strip.Color(0, 0, 255);     // Blue
 uint32_t minuteOnesColor = strip.Color(0, 139, 139);   // Purple
 
+int brightness = 50;
+int brightnessMax = 200;
+int brightnessMin = 50;
+int brightnessStep = 50;
+
 int hour   = 0;
 int minute = 0;
 int second = 0;
@@ -125,7 +130,7 @@ void setup() {
     strip.setPixelColor(i, 0);
   }
   strip.show();              // Turn OFF all pixels ASAP
-  strip.setBrightness(50);   // Set BRIGHTNESS (max = 255)
+  strip.setBrightness(brightness);   // Set BRIGHTNESS (max = 255)
 
   // Init buttons
   // Not sure if the pinMode() calls are needed with ClickButton but it can't
@@ -376,18 +381,16 @@ void loop() {
     }
   }
 
-  /*
-  static long lastChange = 0;
-  if (millis() - lastChange > 25) {
-    lastChange = millis();
-
-    rainbow(minuteOnesLEDs, minuteOnesMax);
-    // rainbow(hourOnesLEDs, hourOnesMax);
-    strip.show();
-
-    firstPixelHue += 256;
+  if (upButton.clicks > 0) {
+    if (menuPosition == 0) {
+      brightness += brightnessStep;
+      if (brightness > brightnessMax) { brightness = brightnessMin; }
+      strip.setBrightness(brightness);
+      strip.show();
+      Serial.print(F("Brightness set to "));
+      Serial.println(brightness);
+    }
   }
-  */
 }
 
 void displayDigit(int digit, uint32_t color, int pixelList[], int max, bool randomize) {
