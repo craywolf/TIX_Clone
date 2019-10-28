@@ -89,6 +89,7 @@ int minuteOnesMax     = 9;
 uint32_t hourTensColor   = strip.Color(0, 255, 0);     // Red
 uint32_t hourOnesColor   = strip.Color(255, 0, 0);     // Green
 uint32_t minuteTensColor = strip.Color(0, 0, 255);     // Blue
+//uint32_t minuteOnesColor = strip.Color(255, 255, 0);   // Yellow
 uint32_t minuteOnesColor = strip.Color(0, 139, 139);   // Purple
 
 int brightness = 50;
@@ -242,6 +243,7 @@ void loop() {
       Serial.println(minute);
     }
 
+    // Hour is always tracked as 24h, updated to 12h for display
     int displayHour = hour;
     if (!militaryTime) {
       if (displayHour > 12) { displayHour -= 12; }
@@ -263,22 +265,16 @@ void loop() {
 
     if(upButton.clicks > 0) {
       hour++;
-      if (militaryTime) {
-        if (hour > 23) { hour = 0; }
-      } else {
-        if (hour > 12 ) { hour = 0; }
-      }
+      // Hour is always tracked as 24h, updated to 12h for display
+      if (hour > 23) { hour = 0; }
       blinkState = false;
       lastBlink = 0;
       lastMenuAction = millis();
     }
     if(downButton.clicks > 0) {
       hour--;
-      if (militaryTime) {
-        if (hour < 0) { hour = 23; }
-      } else {
-        if (hour < 0) { hour = 12; }
-      }
+      // Hour is always tracked as 24h, updated to 12h for display
+      if (hour < 0) { hour = 23; }
       blinkState = false;
       lastBlink = 0;
       lastMenuAction = millis();
