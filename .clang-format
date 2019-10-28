@@ -1,0 +1,16 @@
+BasedOnStyle: Google
+AllowShortBlocksOnASingleLine: true
+Cpp11BracedListStyle: false
+IndentWidth: 2
+SpacesBeforeTrailingComments: 3
+AlignConsecutiveDeclarations: true
+AlignConsecutiveAssignments: true
+#AlignConsecutiveMacros: true
+AlignTrailingComments: true
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterEnum: true
+  AfterStruct: false
+  SplitEmptyFunction: false
+  AfterFunction: false
+  BeforeElse: false
