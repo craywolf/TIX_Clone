@@ -22,6 +22,13 @@
  * - Middle LED  = 4s (default)
  * - Bottom LED  = 1m
  * - Press 'Mode' to return
+ * 
+ * New: Setting color pattern
+ * - Hold 'Down' for 2 seconds (in original this did nothing)
+ * - Tens-of-hours flashes, press 'Up' to cycle colors, press 'Down' to move to next
+ * - Ones-of-hours flashes, " "
+ * - Tens-of-minutes flashes, " "
+ * - Ones-of-minutes flashes, " ", press 'Down' to save
  */
 
 // RTC chip object
