@@ -6,7 +6,7 @@
 /*
  * Official TIX menu functions:
  *
- * Press 'Mode' to set time
+ * Hold 'Mode' to set time (in original it was a short press)
  * - Left 2 indicators flash. Use up/down to set from 1 to 12.
  * - Press again, tens-of-minutes flash. Up/down to set from 1-5.
  * - Press again, ones-of-minutes flash. Up/down to set from 1-9.
@@ -16,7 +16,7 @@
  * - In normal mode, press 'Up' to cycle through brightness levels.
  *
  * Setting update rate:
- * - Hold 'Mode' for 2 seconds. All indicators go out except one of
+ * - Hold 'Up' for 2 seconds (in original this was 'Mode'). All indicators go out except one of
  *   the left-most LEDs. Press 'Up' to cycle through rates.
  * - Top LED lit = 1s
  * - Middle LED  = 4s (default)
