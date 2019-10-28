@@ -150,6 +150,7 @@ long firstPixelHue = 0;
 // Function Declarations
 void colorWipe(uint32_t, int);
 void getRTCTime(void);
+void setRTCTime(void);
 void displayDigit(int, uint32_t, int[], int, bool);
 void printArray(int[], int);
 void clearPixels(int[], int);
@@ -316,6 +317,7 @@ void loop() {
 
     if(upButton.clicks > 0) {
       hour++;
+      second = 0;
       // Hour is always tracked as 24h, updated to 12h for display
       if (hour > 23) { hour = 0; }
       blinkState = false;
@@ -324,6 +326,7 @@ void loop() {
     }
     if(downButton.clicks > 0) {
       hour--;
+      second = 0;
       // Hour is always tracked as 24h, updated to 12h for display
       if (hour < 0) { hour = 23; }
       blinkState = false;
@@ -359,6 +362,7 @@ void loop() {
     if(upButton.clicks > 0) {
       minute += 10;
       if (minute > 59) { minute -= 60; }
+      second = 0;
       blinkState = false;
       lastBlink = 0;
       lastMenuAction = millis();
@@ -366,6 +370,7 @@ void loop() {
     if(downButton.clicks > 0) {
       minute -= 10;
       if (minute < 0) { minute += 60; }
+      second = 0;
       blinkState = false;
       lastBlink = 0;
       lastMenuAction = millis();
@@ -397,6 +402,7 @@ void loop() {
     if(upButton.clicks > 0) {
       minute += 1;
       if (minute % 10 == 0) { minute -= 10; }
+      second = 0;
       blinkState = false;
       lastBlink = 0;
       lastMenuAction = millis();
@@ -404,6 +410,7 @@ void loop() {
     if(downButton.clicks > 0) {
       minute -= 1;
       if (minute % 10 == 9) { minute += 10; }
+      second = 0;
       blinkState = false;
       lastBlink = 0;
       lastMenuAction = millis();
@@ -428,7 +435,7 @@ void loop() {
   }
 
   if (menuPosition == menuMax) {
-    // Save time to RTC
+    setRTCTime();
     menuPosition = 0;
   }
 
@@ -541,5 +548,19 @@ void getRTCTime() {
         Serial.print(minute);
         Serial.print(F(":"));
         Serial.println(second);
+    }
+}
+
+void setRTCTime() {
+    // This clock isn't date-aware so it doesn't matter what date we set here
+    rtc.adjust(DateTime(2014, 1, 1, hour, minute, 0));
+
+    if (Serial) {
+        Serial.print(F("Setting RTC to "));
+
+        Serial.print(hour);
+        Serial.print(F(":"));
+        Serial.print(minute);
+        Serial.println(F(":00"));
     }
 }
