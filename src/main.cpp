@@ -87,29 +87,27 @@ int minuteTensMax     = 6;
 int minuteOnesLEDs[9] = { 6, 7, 8, 11, 10, 9, 24, 25, 26 };
 int minuteOnesMax     = 9;
 
-uint32_t hourTensColor   = strip.Color(0, 255, 0);     // Red
-uint32_t hourOnesColor   = strip.Color(255, 0, 0);     // Green
-uint32_t minuteTensColor = strip.Color(0, 0, 255);     // Blue
-//uint32_t minuteOnesColor = strip.Color(255, 255, 0);   // Yellow
-uint32_t minuteOnesColor = strip.Color(0, 139, 139);   // Purple
-
-int brightness = 50;
-int brightnessMax = 200;
-int brightnessMin = 50;
+int brightnessMax  = 200;
+int brightnessMin  = 50;
 int brightnessStep = 50;
 
+/* 
+ * Internal time tracking (between updates from RTC)
+ */
 int hour   = 0;
 int minute = 0;
 int second = 0;
 
-bool militaryTime = false;
+/*
+ * Tracking of event timing in internal loops
+ */
 
-unsigned long lastRTCUpdate = 0;
-unsigned long RTCInterval = 120000; // Sync RTC every 2 minutes
-
-unsigned long blinkInterval = 500; // menu blinks are 1/3 second
-unsigned long lastBlink = 0;
-bool blinkState = true;
+unsigned long lastRTCUpdate     = 0;        // Last time we got an update from the RTC
+unsigned long RTCInterval       = 120000;   // How often up to update from RTC (ms)
+unsigned long blinkInterval     = 333;      // Blink timing in menus
+unsigned long lastBlink         = 0;        // Last time menu blink changed on/off
+bool          blinkState        = true;     // Is menu blink on or off
+unsigned long lastDisplayUpdate = 0;        // Last time we updated the pixel display
 
 // Menu:
 // 0 = Display Time
@@ -119,20 +117,34 @@ bool blinkState = true;
 // 4 = Save settings and resume clock
 // 5 = Set update interval
 // 6 = Save update interval
-int menuPosition = 0;
-int menuSaveTime = 4;
-int menuMax      = 6;
-unsigned long lastMenuAction = 0;
-unsigned long menuTimeout = 20000; // time out of menu after 20s with no input
+int           menuPosition   = 0;
+int           menuSaveTime   = 4;       // Menu position where time gets saved to RTC
+int           menuMax        = 6;       // Max menu position
+unsigned long lastMenuAction = 0;       // Time of last button press in menu
+unsigned long menuTimeout    = 20000;   // Menu timeout (no input)
+
+// Predefined colors
+const uint32_t clrRed    = strip.Color(0, 255, 0);
+const uint32_t clrGreen  = strip.Color(255, 0, 0);
+const uint32_t clrBlue   = strip.Color(0, 0, 255);
+const uint32_t clrYellow = strip.Color(255, 255, 0);
+const uint32_t clrPurple = strip.Color(0, 139, 139);
 
 // Preferences
-unsigned long lastDisplayUpdate = 0;
-unsigned long updateInterval = 4000; // how many ms between display updates
+bool          militaryTime    = false;           // 12h time if false, 24h time if true
+unsigned long updateInterval  = 4000;            // how many ms between display updates
+uint32_t      hourTensColor   = clrRed;          // Color of Hour Tens digit
+uint32_t      hourOnesColor   = clrGreen;        // Color of Hour Ones digit
+uint32_t      minuteTensColor = clrBlue;         // Color of Minutes Tens digit
+uint32_t      minuteOnesColor = clrPurple;       // Color of Minutes Ones digit
+int           brightness      = brightnessMin;   // Brightness out of 255
 
-// Settings to be stored in EEPROM
+/*
+ * Settings to be stored in EEPROM
+ */
 
-// This will be a signal if we've saved valid data before
-// Can also change if struct changes to signal we need to reset
+// flag is used as to determine if we've saved valid data before
+// update flag if changing struct so we don't load bad data
 const byte flag = B10110001;
 
 struct ConfigSettings {
@@ -147,16 +159,14 @@ struct ConfigSettings {
 };
 ConfigSettings settings;
 
-// for testing via AdaFruit examples - remove along with colorWipe() and rainbow()
-long firstPixelHue = 0;
-
-// Function Declarations
-void colorWipe(uint32_t, int);
-void getRTCTime(void);
-void setRTCTime(void);
-void displayDigit(int, uint32_t, int[], int, bool);
-void printArray(int[], int);
-void clearPixels(int[], int);
+/*
+ * Function Declarations
+ */
+void getRTCTime(void);                                // Fetch time from RTC into global vars
+void setRTCTime(void);                                // Update time in RTC from global vars
+void displayDigit(int, uint32_t, int[], int, bool);   // Send a digit to the display
+void printArray(int[], int);                          // Send an array to serial.print
+void clearPixels(int[], int);                         // Turn off all pixels in an array
 
 void setup() {
   // Init NeoPixel strip
