@@ -127,10 +127,16 @@ unsigned long menuTimeout    = 20000;   // Menu timeout (no input)
 const uint32_t clrRed    = strip.Color(0, 255, 0);
 const uint32_t clrGreen  = strip.Color(255, 0, 0);
 const uint32_t clrBlue   = strip.Color(0, 0, 255);
-const uint32_t clrYellow = strip.Color(255, 255, 0);
 const uint32_t clrPurple = strip.Color(0, 139, 139);
+//const uint32_t clrYellow = strip.Color(255, 255, 0);
 
-// Preferences
+/*
+ * Default values for preferences
+ * 
+ * Will be overwritten by EEPROM settings if found, otherwise
+ * EEPROM is initialized with these values
+ */
+
 bool          militaryTime    = false;           // 12h time if false, 24h time if true
 unsigned long updateInterval  = 4000;            // how many ms between display updates
 uint32_t      hourTensColor   = clrRed;          // Color of Hour Tens digit
@@ -169,41 +175,47 @@ void printArray(int[], int);                          // Send an array to serial
 void clearPixels(int[], int);                         // Turn off all pixels in an array
 
 void setup() {
-  // Init NeoPixel strip
-  strip.begin();             // INITIALIZE NeoPixel strip object (REQUIRED)
-  for (unsigned int i = 0; i < strip.numPixels(); i++) {
-    strip.setPixelColor(i, 0);
-  }
-  strip.show();              // Turn OFF all pixels ASAP
+  Serial.begin(9600);
+
+  /*
+   * Init NeoPixel strip
+   */
+  strip.begin();   // INITIALIZE NeoPixel strip object (REQUIRED)
+  // Set all pixels to off
+  for (unsigned int i = 0; i < strip.numPixels(); i++) { strip.setPixelColor(i, 0); }
+  strip.show();                      // Commit the change
   strip.setBrightness(brightness);   // Set BRIGHTNESS (max = 255)
 
-  // Init buttons
-  // Not sure if the pinMode() calls are needed with ClickButton but it can't
-  // hurt
+  /*
+   * Init buttons
+   */
+
+  // Not sure if the pinMode() calls are needed with ClickButton
+  // but it can't hurt
   pinMode(BTN_UP, INPUT_PULLUP);
   pinMode(BTN_DOWN, INPUT_PULLUP);
   pinMode(BTN_SET, INPUT_PULLUP);
 
-#define DEBOUNCE 30
-#define MULTI_CLICK 50
-#define LONG_CLICK 1000
+  const int DEBOUNCE    = 30;     // ms to wait for debouncing
+  const int MULTI_CLICK = 50;     // how long must pass between multiple clicks
+  const int LONG_CLICK  = 1000;   // length of a long press
 
-  setButton.debounceTime   = DEBOUNCE;      // Debounce timer in ms
-  setButton.multiclickTime = MULTI_CLICK;   // Time limit for multi clicks
-  setButton.longClickTime =
-      LONG_CLICK;   // time until "held-down clicks" register
+  setButton.debounceTime   = DEBOUNCE;
+  setButton.multiclickTime = MULTI_CLICK;
+  setButton.longClickTime  = LONG_CLICK;
 
-  upButton.debounceTime   = DEBOUNCE;      // Debounce timer in ms
-  upButton.multiclickTime = MULTI_CLICK;   // Time limit for multi clicks
-  upButton.longClickTime =
-      LONG_CLICK;   // time until "held-down clicks" register
+  upButton.debounceTime   = DEBOUNCE;
+  upButton.multiclickTime = MULTI_CLICK;
+  upButton.longClickTime  = LONG_CLICK;
 
-  downButton.debounceTime   = DEBOUNCE;      // Debounce timer in ms
-  downButton.multiclickTime = MULTI_CLICK;   // Time limit for multi clicks
-  downButton.longClickTime =
-      LONG_CLICK;   // time until "held-down clicks" register
+  downButton.debounceTime   = DEBOUNCE;
+  downButton.multiclickTime = MULTI_CLICK;
+  downButton.longClickTime  = LONG_CLICK;
 
-  // Initialize the RTC
+  /*
+   * Initialize the RTC
+   */
+
   if (!rtc.begin()) {
     Serial.println(F("Couldn't find RTC"));
     while (1) {};
@@ -215,42 +227,50 @@ void setup() {
   }
   // rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
 
-  Serial.begin(9600);
   getRTCTime();
+
+  /*
+   * Fetch settings from EEPROM, intialize if blank
+   */
 
   EEPROM.get(0, settings);
   if (settings.flag != flag) {
-      Serial.print(F("EEPROM flag invalid! Expected "));
-      Serial.print(flag, BIN);
-      Serial.print(F(", got "));
-      Serial.println(settings.flag, BIN);
-      Serial.println(F("Saving default config data"));
+    Serial.print(F("EEPROM flag invalid! Expected "));
+    Serial.print(flag, BIN);
+    Serial.print(F(", got "));
+    Serial.println(settings.flag, BIN);
+    Serial.println(F("Saving default config data"));
 
-      settings.flag = flag;
-      settings.militaryTime = militaryTime;
-      settings.updateInterval = updateInterval;
-      settings.hourTensColor = hourTensColor;
-      settings.hourOnesColor = hourOnesColor;
-      settings.minuteTensColor = minuteTensColor;
-      settings.minuteOnesColor = minuteOnesColor;
-      settings.brightness = brightness;
+    settings.flag            = flag;
+    settings.militaryTime    = militaryTime;
+    settings.updateInterval  = updateInterval;
+    settings.hourTensColor   = hourTensColor;
+    settings.hourOnesColor   = hourOnesColor;
+    settings.minuteTensColor = minuteTensColor;
+    settings.minuteOnesColor = minuteOnesColor;
+    settings.brightness      = brightness;
 
-      EEPROM.put(0, settings);
+    EEPROM.put(0, settings);
   } else {
-      militaryTime = settings.militaryTime;
-      updateInterval = settings.updateInterval;
-      brightness = settings.brightness;
-      strip.setBrightness(brightness);
+    militaryTime   = settings.militaryTime;
+    updateInterval = settings.updateInterval;
+    brightness     = settings.brightness;
+    strip.setBrightness(brightness);
 
-      Serial.println(F("Loaded settings from EEPROM:"));
-      Serial.print(F("- militaryTime = "));
-      Serial.println(militaryTime, BIN);
-      Serial.print(F("- updateInterval = "));
-      Serial.println(updateInterval);
-      Serial.print(F("- brightness = "));
-      Serial.println(brightness);
+    Serial.println(F("Loaded settings from EEPROM:"));
+    Serial.print(F("- militaryTime = "));
+    Serial.println(militaryTime, BIN);
+    Serial.print(F("- updateInterval = "));
+    Serial.println(updateInterval);
+    Serial.print(F("- brightness = "));
+    Serial.println(brightness);
   }
 
+  /*
+   * Initialize the RNG with input from a disconnected pin
+   * 
+   * Hopefully that introduces some actual randomness
+   */
   randomSeed(analogRead(0));
 
   Serial.println(F("End setup()"));
