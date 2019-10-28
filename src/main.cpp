@@ -22,7 +22,7 @@
  * - Top LED lit = 1s
  * - Middle LED  = 4s (default)
  * - Bottom LED  = 1m
- * - Press 'Set' to return
+ * - Press 'Set' or long press 'Up' to return
  * 
  * New: Setting color pattern
  * - Hold 'Down' for 2 seconds (in original this did nothing)
@@ -117,8 +117,11 @@ bool blinkState = true;
 // 2 = Set Minutes Tens
 // 3 = Set Minutes Ones
 // 4 = Save settings and resume clock
+// 5 = Set update interval
+// 6 = Save update interval
 int menuPosition = 0;
-int menuMax      = 4;
+int menuSaveTime = 4;
+int menuMax      = 6;
 unsigned long lastMenuAction = 0;
 unsigned long menuTimeout = 20000; // time out of menu after 20s with no input
 
@@ -225,7 +228,7 @@ void setup() {
       EEPROM.put(0, settings);
   } else {
       militaryTime = settings.militaryTime;
-
+      updateInterval = settings.updateInterval;
       brightness = settings.brightness;
       strip.setBrightness(brightness);
 
@@ -312,7 +315,7 @@ void loop() {
   // Menu position 1 == set hours (tens and ones)
   if (menuPosition == 1) {
     if (millis() - lastMenuAction > menuTimeout) {
-      menuPosition = menuMax;
+      menuPosition = menuSaveTime;
     }
 
     if(upButton.clicks > 0) {
@@ -356,7 +359,7 @@ void loop() {
   // Set minute - tens digit
   if (menuPosition == 2) {
     if (millis() - lastMenuAction > menuTimeout) {
-      menuPosition = menuMax;
+      menuPosition = menuSaveTime;
     }
 
     if(upButton.clicks > 0) {
@@ -397,7 +400,7 @@ void loop() {
   // Set minute - ones digit
   if (menuPosition == 3) {
     if (millis() - lastMenuAction > menuTimeout) {
-      menuPosition = menuMax;
+      menuPosition = menuSaveTime;
     }
     if(upButton.clicks > 0) {
       minute += 1;
@@ -434,9 +437,70 @@ void loop() {
     }
   }
 
-  if (menuPosition == menuMax) {
+  if (menuPosition == menuSaveTime) {
     setRTCTime();
     menuPosition = 0;
+  }
+
+  // Set update interval
+  if (menuPosition == 5) {
+    if (millis() - lastMenuAction > menuTimeout) {
+      menuPosition = menuSaveTime;
+    }
+    if(upButton.clicks > 0) {
+      switch (updateInterval) {
+        default:
+        case 1000:
+          updateInterval = 4000;
+          //displayDigit(2, strip.Color(255,255,255), hourTensLEDs, hourTensMax, false);
+          break;
+        case 4000:
+          updateInterval = 60000;
+          //displayDigit(3, strip.Color(255,255,255), hourTensLEDs, hourTensMax, false);
+          break;
+        case 60000:
+          updateInterval = 1000;
+          //displayDigit(1, strip.Color(255,255,255), hourTensLEDs, hourTensMax, false);
+          break;
+      }
+      strip.show();
+      lastBlink = 0;
+      lastMenuAction = millis();
+    }
+
+    if ((millis() - lastBlink) > blinkInterval) {
+      // No actual blinking going on, but it's useful for not having to update
+      // the strip hundreds of times per second
+      lastBlink = millis();
+
+      switch (updateInterval) {
+        case 1000:
+          displayDigit(1, strip.Color(255, 255, 255), hourTensLEDs, hourTensMax,
+                       false);
+          break;
+        case 4000:
+          displayDigit(2, strip.Color(255, 255, 255), hourTensLEDs, hourTensMax,
+                       false);
+          break;
+        case 60000:
+          displayDigit(3, strip.Color(255, 255, 255), hourTensLEDs, hourTensMax,
+                       false);
+          break;
+        default:
+          clearPixels(hourTensLEDs, hourTensMax);
+          break;
+      }
+      strip.show();
+    }
+  }
+
+  if (menuPosition == 6) {
+    Serial.print(F("Setting updateInterval = "));
+    Serial.println(updateInterval);
+    settings.updateInterval = updateInterval;
+    EEPROM.put(0, settings);
+    menuPosition = 0;
+    lastDisplayUpdate = 0;
   }
 
   if (setButton.clicks > 0)   // short click
@@ -466,7 +530,8 @@ void loop() {
     }
   }
 
-  if (upButton.clicks > 0) {
+  if (upButton.clicks > 0) // short click
+  {
     if (menuPosition == 0) {
       brightness += brightnessStep;
       if (brightness > brightnessMax) { brightness = brightnessMin; }
@@ -478,6 +543,24 @@ void loop() {
 
       Serial.print(F("Brightness set to "));
       Serial.println(brightness);
+    }
+  }
+
+  if (upButton.clicks < 0) // long click
+  {
+    if (menuPosition == 0){
+      // enter update interval setting menu
+      clearPixels(hourTensLEDs, hourTensMax);
+      clearPixels(hourOnesLEDs, hourOnesMax);
+      clearPixels(minuteTensLEDs, minuteTensMax);
+      clearPixels(minuteOnesLEDs, minuteOnesMax);
+      lastMenuAction = millis();
+      lastBlink = millis() - blinkInterval;
+      menuPosition = 5;
+    }
+    // when setting update interval, long press saves and exits
+    else if (menuPosition == 5) {
+      menuPosition++;
     }
   }
 }
