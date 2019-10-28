@@ -130,7 +130,6 @@ long firstPixelHue = 0;
 
 // Function Declarations
 void colorWipe(uint32_t, int);
-void rainbow(int[], int);
 void getRTCTime(void);
 void displayDigit(int, uint32_t, int[], int, bool);
 void printArray(int[], int);
@@ -463,17 +462,6 @@ void printArray(int arr[], int max) {
   for (int i = 0; i < max; i++) {
     Serial.print(arr[i]);
     Serial.print(F(", "));
-  }
-}
-
-void rainbow(int pixelList[], int max) {
-  for (int i = 0; i < max; i++) {
-    int pixelHue = firstPixelHue + (i * 65536L / max);
-    strip.setPixelColor(pixelList[i], strip.gamma32(strip.ColorHSV(pixelHue)));
-
-    // Serial.print(pixelList[i]);
-    // Serial.print(" = ");
-    // Serial.println(pixelHue);
   }
 }
 
