@@ -85,17 +85,21 @@ int hour   = 0;
 int minute = 0;
 int second = 0;
 
+unsigned long lastRTCUpdate = 0;
+unsigned long RTCInterval = 120000; // Sync RTC every 2 minutes
+
 // Menu:
 // 0 = Display Time
 // 1 = Set Hours
 // 2 = Set Minutes Tens
 // 3 = Set Minutes Ones
-// 4 = 12/24 Hour Time
+// 4 = 12/24 Hour Time ?
 int menuPosition = 0;
-int menuMax      = 2;
+int menuMax      = 3;
 
 // Preferences
-int updateInterval = 4; // how many seconds between display updates
+unsigned long lastDisplayUpdate = 0;
+unsigned long updateInterval = 4000; // how many ms between display updates
 
 // for testing via AdaFruit examples - remove along with colorWipe() and rainbow()
 long firstPixelHue = 0;
@@ -159,6 +163,8 @@ void setup() {
   getRTCTime();
 
   randomSeed(analogRead(0));
+
+  Serial.println(F("End setup()"));
 }
 
 void loop() {
@@ -166,20 +172,69 @@ void loop() {
   upButton.Update();
   downButton.Update();
 
-  static int curNum = 1;
+  // var to hold the last time we moved forward 1 second
+  // static vars init once and keep value between calls
+  static unsigned long lastTick = 0;
+
+  if ((unsigned long)(millis() - lastRTCUpdate) > RTCInterval) {
+    lastRTCUpdate = millis();
+    lastTick = lastRTCUpdate;
+    getRTCTime();
+  }
+
+  if ((unsigned long)(millis() - lastTick) >= 1000) {
+    Serial.println(F("Updating seconds"));
+    Serial.print(F("lastDisplayUpdate = "));
+    Serial.print(lastDisplayUpdate);
+    Serial.print(F(", millis() = "));
+    Serial.print(millis());
+    Serial.println();
+
+    lastTick = millis();
+    second++;
+
+    if (second > 59) {
+        second = 0;
+        minute++;
+    }
+    if (minute > 59) {
+        minute = 0;
+        hour++;
+    }
+
+    if (hour > 23) { hour = 0; }
+  }
+
+  if ((menuPosition == 0) && ((unsigned long)(millis() - lastDisplayUpdate)) > updateInterval) {
+    lastDisplayUpdate = millis();
+    if (Serial) {
+      Serial.print(F("Updating display: "));
+      Serial.print(hour);
+      Serial.print(F(":"));
+      Serial.println(minute);
+    }
+
+    displayDigit((int)(hour / 10), hourTensColor, hourTensLEDs, hourTensMax, true);
+    displayDigit(((int)(hour - ((int)(hour / 10) * 10))), hourOnesColor, hourOnesLEDs, hourOnesMax, true);
+    displayDigit((int)(minute / 10), minuteTensColor, minuteTensLEDs, minuteTensMax, true);
+    displayDigit(((int)(minute - ((int)(minute / 10) * 10))), minuteOnesColor, minuteOnesLEDs, minuteOnesMax, true);
+
+    strip.show();
+  }
 
   if (setButton.clicks > 0)   // short click
   {
-    Serial.println(F("BTN_SET (short)"));
-    displayDigit(curNum, minuteOnesColor, hourOnesLEDs, hourOnesMax, true);
-    curNum++;
-    if (curNum > hourOnesMax) { curNum = 1; }
+    //Serial.println(F("BTN_SET (short)"));
+    //displayDigit(curNum, minuteOnesColor, hourOnesLEDs, hourOnesMax, true);
+    //curNum++;
+    //if (curNum > hourOnesMax) { curNum = 1; }
   }
   if (setButton.clicks < 0)   // long click
   {
     Serial.println(F("BTN_SET (long)"));
   }
 
+  /*
   static long lastChange = 0;
   if (millis() - lastChange > 25) {
     lastChange = millis();
@@ -190,6 +245,7 @@ void loop() {
 
     firstPixelHue += 256;
   }
+  */
 }
 
 void displayDigit(int digit, uint32_t color, int pixelList[], int max, bool randomize) {
@@ -274,6 +330,7 @@ void getRTCTime() {
     DateTime now = rtc.now();
 
     hour   = now.hour();
+    //if (hour > 12) { hour -= 12; }
     minute = now.minute();
     second = now.second();
 
