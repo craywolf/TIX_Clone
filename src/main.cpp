@@ -35,12 +35,24 @@
  * - Press 'Set' button to toggle
  */
 
-// RTC chip object
+/*
+ * 
+ * Set up attached hardware
+ * 
+ */
+
+/*
+ * Initialize RTC
+ */
+
 // Using a ChronoDot from Adafruit - DS3231 based
 // Besides power, connect SDA to A4, and SCL to A5
 RTC_DS3231 rtc;
 
-// Button inputs
+/*
+ * Intialize buttons
+ */
+
 #define BTN_UP 7
 #define BTN_DOWN 8
 #define BTN_SET 9
@@ -48,6 +60,10 @@ RTC_DS3231 rtc;
 ClickButton setButton(BTN_SET, LOW, CLICKBTN_PULLUP);
 ClickButton upButton(BTN_UP, LOW, CLICKBTN_PULLUP);
 ClickButton downButton(BTN_DOWN, LOW, CLICKBTN_PULLUP);
+
+/*
+ * Intialize NeoPixels
+ */
 
 // Which pin on the Arduino is connected to the NeoPixels?
 // On a Trinket or Gemma we suggest changing this to 1:
@@ -67,8 +83,16 @@ Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 //   NEO_RGB     Pixels are wired for RGB bitstream (v1 FLORA pixels, not v2)
 //   NEO_RGBW    Pixels are wired for RGBW bitstream (NeoPixel RGBW products)
 
-// Define which pixels are for each digit
-//
+/*
+ *
+ * Global variables
+ * 
+ */
+
+/*
+ * Define which pixels are for each digit
+ */
+
 // The LEDs are laid out to be compatible with using sections of LED strip:
 //
 // HourTens             HourOnes              MinuteTens             MinuteOnes
@@ -87,6 +111,10 @@ int minuteTensMax     = 6;
 int minuteOnesLEDs[9] = { 6, 7, 8, 11, 10, 9, 24, 25, 26 };
 int minuteOnesMax     = 9;
 
+/*
+ * Min, max brightness and interval between
+ */
+
 int brightnessMax  = 200;
 int brightnessMin  = 50;
 int brightnessStep = 50;
@@ -94,6 +122,7 @@ int brightnessStep = 50;
 /* 
  * Internal time tracking (between updates from RTC)
  */
+
 int hour   = 0;
 int minute = 0;
 int second = 0;
@@ -109,7 +138,10 @@ unsigned long lastBlink         = 0;        // Last time menu blink changed on/o
 bool          blinkState        = true;     // Is menu blink on or off
 unsigned long lastDisplayUpdate = 0;        // Last time we updated the pixel display
 
-// Menu:
+/*
+ * Define menu positions
+ */
+
 // 0 = Display Time
 // 1 = Set Hours
 // 2 = Set Minutes Tens
@@ -123,7 +155,10 @@ int           menuMax        = 6;       // Max menu position
 unsigned long lastMenuAction = 0;       // Time of last button press in menu
 unsigned long menuTimeout    = 20000;   // Menu timeout (no input)
 
-// Predefined colors
+/*
+ * Predefined colors
+ */
+
 const uint32_t clrRed    = strip.Color(0, 255, 0);
 const uint32_t clrGreen  = strip.Color(255, 0, 0);
 const uint32_t clrBlue   = strip.Color(0, 0, 255);
@@ -131,7 +166,7 @@ const uint32_t clrPurple = strip.Color(0, 139, 139);
 //const uint32_t clrYellow = strip.Color(255, 255, 0);
 
 /*
- * Options for update intervals
+ * Update interval options
  */
 
 const int updateIntervalFast   = 1000;    // 1 second
@@ -154,7 +189,7 @@ uint32_t      minuteOnesColor = clrPurple;              // Color of Minutes Ones
 int           brightness      = brightnessMin;          // Brightness out of 255
 
 /*
- * Settings to be stored in EEPROM
+ * Vars for storing settings in EEPROM
  */
 
 // flag is used as to determine if we've saved valid data before
