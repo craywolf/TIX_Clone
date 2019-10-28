@@ -2,6 +2,7 @@
 #include <Arduino.h>
 #include <ClickButton.h>
 #include <RTClib.h>
+#include <EEPROM.h>
 
 /*
  * Official TIX menu functions:
@@ -125,6 +126,24 @@ unsigned long menuTimeout = 20000; // time out of menu after 20s with no input
 unsigned long lastDisplayUpdate = 0;
 unsigned long updateInterval = 4000; // how many ms between display updates
 
+// Settings to be stored in EEPROM
+
+// This will be a signal if we've saved valid data before
+// Can also change if struct changes to signal we need to reset
+const byte flag = B10110001;
+
+struct ConfigSettings {
+    byte flag;
+    bool militaryTime;
+    unsigned long updateInterval;
+    uint32_t hourTensColor;
+    uint32_t hourOnesColor;
+    uint32_t minuteTensColor;
+    uint32_t minuteOnesColor;
+    int brightness;
+};
+ConfigSettings settings;
+
 // for testing via AdaFruit examples - remove along with colorWipe() and rainbow()
 long firstPixelHue = 0;
 
@@ -184,6 +203,39 @@ void setup() {
 
   Serial.begin(9600);
   getRTCTime();
+
+  EEPROM.get(0, settings);
+  if (settings.flag != flag) {
+      Serial.print(F("EEPROM flag invalid! Expected "));
+      Serial.print(flag, BIN);
+      Serial.print(F(", got "));
+      Serial.println(settings.flag, BIN);
+      Serial.println(F("Saving default config data"));
+
+      settings.flag = flag;
+      settings.militaryTime = militaryTime;
+      settings.updateInterval = updateInterval;
+      settings.hourTensColor = hourTensColor;
+      settings.hourOnesColor = hourOnesColor;
+      settings.minuteTensColor = minuteTensColor;
+      settings.minuteOnesColor = minuteOnesColor;
+      settings.brightness = brightness;
+
+      EEPROM.put(0, settings);
+  } else {
+      militaryTime = settings.militaryTime;
+
+      brightness = settings.brightness;
+      strip.setBrightness(brightness);
+
+      Serial.println(F("Loaded settings from EEPROM:"));
+      Serial.print(F("- militaryTime = "));
+      Serial.println(militaryTime, BIN);
+      Serial.print(F("- updateInterval = "));
+      Serial.println(updateInterval);
+      Serial.print(F("- brightness = "));
+      Serial.println(brightness);
+  }
 
   randomSeed(analogRead(0));
 
@@ -392,6 +444,8 @@ void loop() {
       Serial.println(menuPosition);
     } else {
       militaryTime = !militaryTime;
+      settings.militaryTime = militaryTime;
+      EEPROM.put(0, settings);
       lastDisplayUpdate -= updateInterval;
     }
   }
@@ -411,6 +465,10 @@ void loop() {
       if (brightness > brightnessMax) { brightness = brightnessMin; }
       strip.setBrightness(brightness);
       strip.show();
+      
+      settings.brightness = brightness;
+      EEPROM.put(0, settings);
+
       Serial.print(F("Brightness set to "));
       Serial.println(brightness);
     }
