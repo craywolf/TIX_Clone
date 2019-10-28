@@ -6,7 +6,7 @@
 /*
  * Official TIX menu functions:
  *
- * Hold 'Mode' to set time (in original it was a short press)
+ * Hold 'Set' to set time (in original it was a short press)
  * - Left 2 indicators flash. Use up/down to set from 1 to 12.
  * - Press again, tens-of-minutes flash. Up/down to set from 1-5.
  * - Press again, ones-of-minutes flash. Up/down to set from 1-9.
@@ -16,12 +16,12 @@
  * - In normal mode, press 'Up' to cycle through brightness levels.
  *
  * Setting update rate:
- * - Hold 'Up' for 2 seconds (in original this was 'Mode'). All indicators go out except one of
+ * - Hold 'Up' for 2 seconds (in original this was 'Set'). All indicators go out except one of
  *   the left-most LEDs. Press 'Up' to cycle through rates.
  * - Top LED lit = 1s
  * - Middle LED  = 4s (default)
  * - Bottom LED  = 1m
- * - Press 'Mode' to return
+ * - Press 'Set' to return
  * 
  * New: Setting color pattern
  * - Hold 'Down' for 2 seconds (in original this did nothing)
@@ -29,6 +29,9 @@
  * - Ones-of-hours flashes, " "
  * - Tens-of-minutes flashes, " "
  * - Ones-of-minutes flashes, " ", press 'Down' to save
+ * 
+ * New: Setting 12/24 hour time
+ * - Press 'Set' button to toggle
  */
 
 // RTC chip object
@@ -96,6 +99,8 @@ int brightnessStep = 50;
 int hour   = 0;
 int minute = 0;
 int second = 0;
+
+bool militaryTime = false;
 
 unsigned long lastRTCUpdate = 0;
 unsigned long RTCInterval = 120000; // Sync RTC every 2 minutes
@@ -220,6 +225,7 @@ void loop() {
         hour++;
     }
 
+    // hour is kept as 24h internally, changed to 12h for display if militaryTime = false
     if (hour > 23) { hour = 0; }
   }
 
@@ -236,8 +242,13 @@ void loop() {
       Serial.println(minute);
     }
 
-    displayDigit((int)(hour / 10), hourTensColor, hourTensLEDs, hourTensMax, true);
-    displayDigit(((int)(hour - ((int)(hour / 10) * 10))), hourOnesColor, hourOnesLEDs, hourOnesMax, true);
+    int displayHour = hour;
+    if (!militaryTime) {
+      if (displayHour > 12) { displayHour -= 12; }
+    }
+
+    displayDigit((int)(displayHour / 10), hourTensColor, hourTensLEDs, hourTensMax, true);
+    displayDigit(((int)(displayHour - ((int)(displayHour / 10) * 10))), hourOnesColor, hourOnesLEDs, hourOnesMax, true);
     displayDigit((int)(minute / 10), minuteTensColor, minuteTensLEDs, minuteTensMax, true);
     displayDigit(((int)(minute - ((int)(minute / 10) * 10))), minuteOnesColor, minuteOnesLEDs, minuteOnesMax, true);
 
@@ -252,14 +263,22 @@ void loop() {
 
     if(upButton.clicks > 0) {
       hour++;
-      if (hour > 23) { hour = 0; }
+      if (militaryTime) {
+        if (hour > 23) { hour = 0; }
+      } else {
+        if (hour > 12 ) { hour = 0; }
+      }
       blinkState = false;
       lastBlink = 0;
       lastMenuAction = millis();
     }
     if(downButton.clicks > 0) {
       hour--;
-      if (hour < 0) { hour = 23; }
+      if (militaryTime) {
+        if (hour < 0) { hour = 23; }
+      } else {
+        if (hour < 0) { hour = 12; }
+      }
       blinkState = false;
       lastBlink = 0;
       lastMenuAction = millis();
@@ -376,6 +395,9 @@ void loop() {
       lastMenuAction = millis();
       Serial.print(F("Entering menu: "));
       Serial.println(menuPosition);
+    } else {
+      militaryTime = !militaryTime;
+      lastDisplayUpdate -= updateInterval;
     }
   }
   if (setButton.clicks < 0)   // long click
@@ -401,11 +423,13 @@ void loop() {
 }
 
 void displayDigit(int digit, uint32_t color, int pixelList[], int max, bool randomize) {
+  /*
   Serial.print(F("Displaying digit "));
   Serial.print(digit);
   Serial.print(F(" on LEDs: "));
   printArray(pixelList, max);
   Serial.println();
+  */
 
   int digitOrder[max];
   for (int i = 0; i < max; i++) {
@@ -413,7 +437,7 @@ void displayDigit(int digit, uint32_t color, int pixelList[], int max, bool rand
   }
 
   if (randomize) {
-    Serial.println(F("Randomizing digit order"));
+    //Serial.println(F("Randomizing digit order"));
     for (int i = 0; i < max; i++) {
       int r = random(0, max);
       int t = digitOrder[r];
@@ -454,26 +478,6 @@ void rainbow(int pixelList[], int max) {
     // Serial.print(pixelList[i]);
     // Serial.print(" = ");
     // Serial.println(pixelHue);
-  }
-}
-
-// Fill strip pixels one after another with a color. Strip is NOT cleared
-// first; anything there will be covered pixel by pixel. Pass in color
-// (as a single 'packed' 32-bit value, which you can get by calling
-// strip.Color(red, green, blue) as shown in the loop() function above),
-// and a delay time (in milliseconds) between pixels.
-//
-// Fill along the length of the strip in various colors...
-// colorWipe(strip.Color(255,   0,   0), 50); // Red
-// colorWipe(strip.Color(  0, 255,   0), 50); // Green
-// colorWipe(strip.Color(  0,   0, 255), 50); // Blue
-
-void colorWipe(uint32_t color, int wait) {
-  for (unsigned int i = 0; i < strip.numPixels();
-       i++) {                        // For each pixel in strip...
-    strip.setPixelColor(i, color);   //  Set pixel's color (in RAM)
-    strip.show();                    //  Update strip to match
-    delay(wait);                     //  Pause for a moment
   }
 }
 
