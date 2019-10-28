@@ -131,19 +131,27 @@ const uint32_t clrPurple = strip.Color(0, 139, 139);
 //const uint32_t clrYellow = strip.Color(255, 255, 0);
 
 /*
+ * Options for update intervals
+ */
+
+const int updateIntervalFast   = 1000;    // 1 second
+const int updateIntervalMedium = 4000;    // 4 seconds
+const int updateIntervalSlow   = 60000;   // 60 seconds
+
+/*
  * Default values for preferences
  * 
  * Will be overwritten by EEPROM settings if found, otherwise
  * EEPROM is initialized with these values
  */
 
-bool          militaryTime    = false;           // 12h time if false, 24h time if true
-unsigned long updateInterval  = 4000;            // how many ms between display updates
-uint32_t      hourTensColor   = clrRed;          // Color of Hour Tens digit
-uint32_t      hourOnesColor   = clrGreen;        // Color of Hour Ones digit
-uint32_t      minuteTensColor = clrBlue;         // Color of Minutes Tens digit
-uint32_t      minuteOnesColor = clrPurple;       // Color of Minutes Ones digit
-int           brightness      = brightnessMin;   // Brightness out of 255
+bool          militaryTime    = false;                  // 12h time if false, 24h time if true
+unsigned long updateInterval  = updateIntervalMedium;   // how many ms between display updates
+uint32_t      hourTensColor   = clrRed;                 // Color of Hour Tens digit
+uint32_t      hourOnesColor   = clrGreen;               // Color of Hour Ones digit
+uint32_t      minuteTensColor = clrBlue;                // Color of Minutes Tens digit
+uint32_t      minuteOnesColor = clrPurple;              // Color of Minutes Ones digit
+int           brightness      = brightnessMin;          // Brightness out of 255
 
 /*
  * Settings to be stored in EEPROM
@@ -277,20 +285,23 @@ void setup() {
 }
 
 void loop() {
-  setButton.Update();
-  upButton.Update();
-  downButton.Update();
-
   // var to hold the last time we moved forward 1 second
   // static vars init once and keep value between calls
   static unsigned long lastTick = 0;
 
+  // Check for any button presses that have been queued
+  setButton.Update();
+  upButton.Update();
+  downButton.Update();
+
+  // Update time from RTC
   if ((unsigned long)(millis() - lastRTCUpdate) > RTCInterval) {
     lastRTCUpdate = millis();
-    lastTick = lastRTCUpdate;
+    lastTick      = lastRTCUpdate;
     getRTCTime();
   }
 
+  // Update our stored time vars once every second
   if ((unsigned long)(millis() - lastTick) >= 1000) {
     Serial.println(F("Updating seconds"));
     Serial.print(F("lastDisplayUpdate = "));
@@ -303,23 +314,25 @@ void loop() {
     second++;
 
     if (second > 59) {
-        second = 0;
-        minute++;
+      second = 0;
+      minute++;
     }
     if (minute > 59) {
-        minute = 0;
-        hour++;
+      minute = 0;
+      hour++;
     }
 
     // hour is kept as 24h internally, changed to 12h for display if militaryTime = false
     if (hour > 23) { hour = 0; }
   }
 
-  // If we're in menuPosition == 0 (meaning we're in normal diplay mode) 
-  // and the updateInterval has passed (meaning we should update the display)
-  //
-  // In other words this is what should run when we're not in a menu
-  if ((menuPosition == 0) && ((((unsigned long)(millis() - lastDisplayUpdate)) > updateInterval) || lastDisplayUpdate == 0)) {
+  /* If we're in menuPosition == 0 (meaning we're in normal diplay mode)
+   * and the updateInterval has passed (meaning we should update the display)
+   *
+   * In other words this is what should run when we're not in a menu
+   */
+  if ((menuPosition == 0) && ((((unsigned long)(millis() - lastDisplayUpdate)) > updateInterval) ||
+                              lastDisplayUpdate == 0)) {
     lastDisplayUpdate = millis();
     if (Serial) {
       Serial.print(F("Updating display: "));
@@ -335,48 +348,64 @@ void loop() {
     }
 
     displayDigit((int)(displayHour / 10), hourTensColor, hourTensLEDs, hourTensMax, true);
-    displayDigit(((int)(displayHour - ((int)(displayHour / 10) * 10))), hourOnesColor, hourOnesLEDs, hourOnesMax, true);
+    displayDigit(((int)(displayHour - ((int)(displayHour / 10) * 10))), hourOnesColor, hourOnesLEDs,
+                 hourOnesMax, true);
     displayDigit((int)(minute / 10), minuteTensColor, minuteTensLEDs, minuteTensMax, true);
-    displayDigit(((int)(minute - ((int)(minute / 10) * 10))), minuteOnesColor, minuteOnesLEDs, minuteOnesMax, true);
+    displayDigit(((int)(minute - ((int)(minute / 10) * 10))), minuteOnesColor, minuteOnesLEDs,
+                 minuteOnesMax, true);
 
+    // Only run strip.show when needed, otherwise it wastes cycles
     strip.show();
   }
 
+  /*
+   * Menu handling
+   *
+   * Loop above doesn't run when we're in a menu - these run instead
+   */
+
   // Menu position 1 == set hours (tens and ones)
   if (menuPosition == 1) {
-    if (millis() - lastMenuAction > menuTimeout) {
-      menuPosition = menuSaveTime;
-    }
+    // Save time and exit if no button presses in menuTimeout ms
+    if (millis() - lastMenuAction > menuTimeout) { menuPosition = menuSaveTime; }
 
-    if(upButton.clicks > 0) {
+    if (upButton.clicks > 0) {
+      lastMenuAction = millis();
+
       hour++;
-      second = 0;
-      // Hour is always tracked as 24h, updated to 12h for display
       if (hour > 23) { hour = 0; }
+      second = 0;   // Keeps time from updating on us while we're trying to set it
+
+      // Reset blink state on button press
       blinkState = false;
-      lastBlink = 0;
-      lastMenuAction = millis();
+      lastBlink  = 0;
     }
-    if(downButton.clicks > 0) {
-      hour--;
-      second = 0;
-      // Hour is always tracked as 24h, updated to 12h for display
-      if (hour < 0) { hour = 23; }
-      blinkState = false;
-      lastBlink = 0;
+    if (downButton.clicks > 0) {
       lastMenuAction = millis();
+
+      hour--;
+      if (hour < 0) { hour = 23; }
+      second = 0;   // Keeps time from updating on us while we're trying to set it
+
+      // Reset blink state on button press
+      blinkState = false;
+      lastBlink  = 0;
     }
 
+    // Every blinkInterval ms, update the display
     if ((millis() - lastBlink) > blinkInterval) {
-      lastBlink = millis();
+      lastBlink  = millis();
       blinkState = !blinkState;
 
+      // Minutes digits don't blink
       displayDigit((int)(minute / 10), minuteTensColor, minuteTensLEDs, minuteTensMax, false);
-      displayDigit(((int)(minute - ((int)(minute / 10) * 10))), minuteOnesColor, minuteOnesLEDs, minuteOnesMax, false);
+      displayDigit(((int)(minute - ((int)(minute / 10) * 10))), minuteOnesColor, minuteOnesLEDs,
+                   minuteOnesMax, false);
 
       if (blinkState) {
         displayDigit((int)(hour / 10), hourTensColor, hourTensLEDs, hourTensMax, false);
-        displayDigit(((int)(hour - ((int)(hour / 10) * 10))), hourOnesColor, hourOnesLEDs, hourOnesMax, false);
+        displayDigit(((int)(hour - ((int)(hour / 10) * 10))), hourOnesColor, hourOnesLEDs,
+                     hourOnesMax, false);
       } else {
         clearPixels(hourOnesLEDs, hourOnesMax);
         clearPixels(hourTensLEDs, hourTensMax);
@@ -388,34 +417,40 @@ void loop() {
 
   // Set minute - tens digit
   if (menuPosition == 2) {
-    if (millis() - lastMenuAction > menuTimeout) {
-      menuPosition = menuSaveTime;
-    }
+    // Save time and exit if no button presses in menuTimeout ms
+    if (millis() - lastMenuAction > menuTimeout) { menuPosition = menuSaveTime; }
 
-    if(upButton.clicks > 0) {
+    if (upButton.clicks > 0) {
+      lastMenuAction = millis();
+
       minute += 10;
       if (minute > 59) { minute -= 60; }
-      second = 0;
+      second = 0;   // Keeps time from updating on us while we're trying to set it
+
       blinkState = false;
-      lastBlink = 0;
-      lastMenuAction = millis();
+      lastBlink  = 0;
     }
-    if(downButton.clicks > 0) {
+    if (downButton.clicks > 0) {
+      lastMenuAction = millis();
+
       minute -= 10;
       if (minute < 0) { minute += 60; }
-      second = 0;
+      second = 0;   // Keeps time from updating on us while we're trying to set it
+
       blinkState = false;
-      lastBlink = 0;
-      lastMenuAction = millis();
+      lastBlink  = 0;
     }
 
     if ((millis() - lastBlink) > blinkInterval) {
-      lastBlink = millis();
+      lastBlink  = millis();
       blinkState = !blinkState;
 
+      // Hours digits and minute ones don't blink
       displayDigit((int)(hour / 10), hourTensColor, hourTensLEDs, hourTensMax, false);
-      displayDigit(((int)(hour - ((int)(hour / 10) * 10))), hourOnesColor, hourOnesLEDs, hourOnesMax, false);
-      displayDigit(((int)(minute - ((int)(minute / 10) * 10))), minuteOnesColor, minuteOnesLEDs, minuteOnesMax, false);
+      displayDigit(((int)(hour - ((int)(hour / 10) * 10))), hourOnesColor, hourOnesLEDs,
+                   hourOnesMax, false);
+      displayDigit(((int)(minute - ((int)(minute / 10) * 10))), minuteOnesColor, minuteOnesLEDs,
+                   minuteOnesMax, false);
 
       if (blinkState) {
         displayDigit((int)(minute / 10), minuteTensColor, minuteTensLEDs, minuteTensMax, false);
@@ -429,32 +464,38 @@ void loop() {
 
   // Set minute - ones digit
   if (menuPosition == 3) {
-    if (millis() - lastMenuAction > menuTimeout) {
-      menuPosition = menuSaveTime;
-    }
-    if(upButton.clicks > 0) {
+    // Save time and exit if no button presses in menuTimeout ms
+    if (millis() - lastMenuAction > menuTimeout) { menuPosition = menuSaveTime; }
+
+    if (upButton.clicks > 0) {
+      lastMenuAction = millis();
+
       minute += 1;
       if (minute % 10 == 0) { minute -= 10; }
       second = 0;
+
       blinkState = false;
-      lastBlink = 0;
-      lastMenuAction = millis();
+      lastBlink  = 0;
     }
-    if(downButton.clicks > 0) {
+    if (downButton.clicks > 0) {
+      lastMenuAction = millis();
+
       minute -= 1;
       if (minute % 10 == 9) { minute += 10; }
       second = 0;
+
       blinkState = false;
-      lastBlink = 0;
-      lastMenuAction = millis();
+      lastBlink  = 0;
     }
 
     if ((millis() - lastBlink) > blinkInterval) {
-      lastBlink = millis();
+      lastBlink  = millis();
       blinkState = !blinkState;
 
+      // Hours digits and minute tens don't blink
       displayDigit((int)(hour / 10), hourTensColor, hourTensLEDs, hourTensMax, false);
-      displayDigit(((int)(hour - ((int)(hour / 10) * 10))), hourOnesColor, hourOnesLEDs, hourOnesMax, false);
+      displayDigit(((int)(hour - ((int)(hour / 10) * 10))), hourOnesColor, hourOnesLEDs,
+                   hourOnesMax, false);
       displayDigit((int)(minute / 10), minuteTensColor, minuteTensLEDs, minuteTensMax, false);
 
       if (blinkState) {
@@ -467,34 +508,36 @@ void loop() {
     }
   }
 
+  // This menu position isn't interactive - just signals we're done setting time
   if (menuPosition == menuSaveTime) {
+    // Save global time vars to RTC
     setRTCTime();
+
+    // Reset menu to none
     menuPosition = 0;
   }
 
-  // Set update interval
+  // Set display update interval
   if (menuPosition == 5) {
-    if (millis() - lastMenuAction > menuTimeout) {
-      menuPosition = menuSaveTime;
-    }
-    if(upButton.clicks > 0) {
+    if (millis() - lastMenuAction > menuTimeout) { menuPosition = menuSaveTime; }
+    if (upButton.clicks > 0) {
       switch (updateInterval) {
         default:
-        case 1000:
-          updateInterval = 4000;
-          //displayDigit(2, strip.Color(255,255,255), hourTensLEDs, hourTensMax, false);
+        case updateIntervalFast:
+          updateInterval = updateIntervalMedium;
+          // displayDigit(2, strip.Color(255,255,255), hourTensLEDs, hourTensMax, false);
           break;
-        case 4000:
-          updateInterval = 60000;
-          //displayDigit(3, strip.Color(255,255,255), hourTensLEDs, hourTensMax, false);
+        case updateIntervalMedium:
+          updateInterval = updateIntervalSlow;
+          // displayDigit(3, strip.Color(255,255,255), hourTensLEDs, hourTensMax, false);
           break;
-        case 60000:
-          updateInterval = 1000;
-          //displayDigit(1, strip.Color(255,255,255), hourTensLEDs, hourTensMax, false);
+        case updateIntervalSlow:
+          updateInterval = updateIntervalFast;
+          // displayDigit(1, strip.Color(255,255,255), hourTensLEDs, hourTensMax, false);
           break;
       }
       strip.show();
-      lastBlink = 0;
+      lastBlink      = 0;
       lastMenuAction = millis();
     }
 
@@ -504,17 +547,14 @@ void loop() {
       lastBlink = millis();
 
       switch (updateInterval) {
-        case 1000:
-          displayDigit(1, strip.Color(255, 255, 255), hourTensLEDs, hourTensMax,
-                       false);
+        case updateIntervalFast:
+          displayDigit(1, strip.Color(255, 255, 255), hourTensLEDs, hourTensMax, false);
           break;
-        case 4000:
-          displayDigit(2, strip.Color(255, 255, 255), hourTensLEDs, hourTensMax,
-                       false);
+        case updateIntervalMedium:
+          displayDigit(2, strip.Color(255, 255, 255), hourTensLEDs, hourTensMax, false);
           break;
-        case 60000:
-          displayDigit(3, strip.Color(255, 255, 255), hourTensLEDs, hourTensMax,
-                       false);
+        case updateIntervalSlow:
+          displayDigit(3, strip.Color(255, 255, 255), hourTensLEDs, hourTensMax, false);
           break;
         default:
           clearPixels(hourTensLEDs, hourTensMax);
@@ -524,34 +564,47 @@ void loop() {
     }
   }
 
+  // Another non-interactive menu position, this one saves the
+  // display interval to EEPROM and then exits the menu
   if (menuPosition == 6) {
     Serial.print(F("Setting updateInterval = "));
     Serial.println(updateInterval);
+
     settings.updateInterval = updateInterval;
     EEPROM.put(0, settings);
-    menuPosition = 0;
+
+    menuPosition      = 0;
     lastDisplayUpdate = 0;
   }
 
-  if (setButton.clicks > 0)   // short click
-  {
+  /*
+   * Handle any button presses
+   */
+
+  // Set button - short click
+  if (setButton.clicks > 0) {
+    // If we're in a menu, cycle to the next menu
     if (menuPosition > 0) {
       menuPosition++;
-      if (menuPosition > menuMax) {
-        menuPosition = 0;
-      }
+      if (menuPosition > menuMax) { menuPosition = 0; }
       lastMenuAction = millis();
       Serial.print(F("Entering menu: "));
       Serial.println(menuPosition);
-    } else {
-      militaryTime = !militaryTime;
+    }
+    // If we're not in a menu, pressing this switches between 12/24h time
+    // TODO: Add some signal so we know what's going on if hour < 12?
+    else {
+      militaryTime          = !militaryTime;
       settings.militaryTime = militaryTime;
       EEPROM.put(0, settings);
-      lastDisplayUpdate -= updateInterval;
+
+      // Update display immediately
+      lastDisplayUpdate = 0;
     }
   }
-  if (setButton.clicks < 0)   // long click
-  {
+
+  // Set button - long click
+  if (setButton.clicks < 0) {
     // long press is only used for entering menu
     if (menuPosition == 0) {
       menuPosition++;
@@ -560,14 +613,17 @@ void loop() {
     }
   }
 
-  if (upButton.clicks > 0) // short click
-  {
+  // Up button - short click
+  if (upButton.clicks > 0) {
+    // Outside of menus, this cycles through brightness settings
+    // (Inside menus it's handled by that code)
     if (menuPosition == 0) {
       brightness += brightnessStep;
       if (brightness > brightnessMax) { brightness = brightnessMin; }
+
       strip.setBrightness(brightness);
-      strip.show();
-      
+      strip.show();   // Update brightness immediately
+
       settings.brightness = brightness;
       EEPROM.put(0, settings);
 
@@ -576,19 +632,20 @@ void loop() {
     }
   }
 
-  if (upButton.clicks < 0) // long click
-  {
-    if (menuPosition == 0){
+  // Up button - long click
+  if (upButton.clicks < 0) {
+    // Outside of menus, a long press here enters the update interval chooser
+    if (menuPosition == 0) {
       // enter update interval setting menu
       clearPixels(hourTensLEDs, hourTensMax);
       clearPixels(hourOnesLEDs, hourOnesMax);
       clearPixels(minuteTensLEDs, minuteTensMax);
       clearPixels(minuteOnesLEDs, minuteOnesMax);
       lastMenuAction = millis();
-      lastBlink = millis() - blinkInterval;
-      menuPosition = 5;
+      lastBlink      = millis() - blinkInterval;
+      menuPosition   = 5;
     }
-    // when setting update interval, long press saves and exits
+    // Inside the update interval chooser, a long press saves and exits
     else if (menuPosition == 5) {
       menuPosition++;
     }
