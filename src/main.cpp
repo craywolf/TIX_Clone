@@ -88,14 +88,20 @@ int second = 0;
 unsigned long lastRTCUpdate = 0;
 unsigned long RTCInterval = 120000; // Sync RTC every 2 minutes
 
+unsigned long blinkInterval = 500; // menu blinks are 1/3 second
+unsigned long lastBlink = 0;
+bool blinkState = true;
+
 // Menu:
 // 0 = Display Time
 // 1 = Set Hours
 // 2 = Set Minutes Tens
 // 3 = Set Minutes Ones
-// 4 = 12/24 Hour Time ?
+// 4 = Save settings and resume clock
 int menuPosition = 0;
-int menuMax      = 3;
+int menuMax      = 4;
+unsigned long lastMenuAction = 0;
+unsigned long menuTimeout = 20000; // time out of menu after 20s with no input
 
 // Preferences
 unsigned long lastDisplayUpdate = 0;
@@ -205,7 +211,11 @@ void loop() {
     if (hour > 23) { hour = 0; }
   }
 
-  if ((menuPosition == 0) && ((unsigned long)(millis() - lastDisplayUpdate)) > updateInterval) {
+  // If we're in menuPosition == 0 (meaning we're in normal diplay mode) 
+  // and the updateInterval has passed (meaning we should update the display)
+  //
+  // In other words this is what should run when we're not in a menu
+  if ((menuPosition == 0) && ((((unsigned long)(millis() - lastDisplayUpdate)) > updateInterval) || lastDisplayUpdate == 0)) {
     lastDisplayUpdate = millis();
     if (Serial) {
       Serial.print(F("Updating display: "));
@@ -222,16 +232,148 @@ void loop() {
     strip.show();
   }
 
+  // Menu position 1 == set hours (tens and ones)
+  if (menuPosition == 1) {
+    if (millis() - lastMenuAction > menuTimeout) {
+      menuPosition = menuMax;
+    }
+
+    if(upButton.clicks > 0) {
+      hour++;
+      if (hour > 23) { hour = 0; }
+      blinkState = false;
+      lastBlink = 0;
+      lastMenuAction = millis();
+    }
+    if(downButton.clicks > 0) {
+      hour--;
+      if (hour < 0) { hour = 23; }
+      blinkState = false;
+      lastBlink = 0;
+      lastMenuAction = millis();
+    }
+
+    if ((millis() - lastBlink) > blinkInterval) {
+      lastBlink = millis();
+      blinkState = !blinkState;
+
+      displayDigit((int)(minute / 10), minuteTensColor, minuteTensLEDs, minuteTensMax, false);
+      displayDigit(((int)(minute - ((int)(minute / 10) * 10))), minuteOnesColor, minuteOnesLEDs, minuteOnesMax, false);
+
+      if (blinkState) {
+        displayDigit((int)(hour / 10), hourTensColor, hourTensLEDs, hourTensMax, false);
+        displayDigit(((int)(hour - ((int)(hour / 10) * 10))), hourOnesColor, hourOnesLEDs, hourOnesMax, false);
+      } else {
+        clearPixels(hourOnesLEDs, hourOnesMax);
+        clearPixels(hourTensLEDs, hourTensMax);
+      }
+
+      strip.show();
+    }
+  }
+
+  // Set minute - tens digit
+  if (menuPosition == 2) {
+    if (millis() - lastMenuAction > menuTimeout) {
+      menuPosition = menuMax;
+    }
+
+    if(upButton.clicks > 0) {
+      minute += 10;
+      if (minute > 59) { minute -= 60; }
+      blinkState = false;
+      lastBlink = 0;
+      lastMenuAction = millis();
+    }
+    if(downButton.clicks > 0) {
+      minute -= 10;
+      if (minute < 0) { minute += 60; }
+      blinkState = false;
+      lastBlink = 0;
+      lastMenuAction = millis();
+    }
+
+    if ((millis() - lastBlink) > blinkInterval) {
+      lastBlink = millis();
+      blinkState = !blinkState;
+
+      displayDigit((int)(hour / 10), hourTensColor, hourTensLEDs, hourTensMax, false);
+      displayDigit(((int)(hour - ((int)(hour / 10) * 10))), hourOnesColor, hourOnesLEDs, hourOnesMax, false);
+      displayDigit(((int)(minute - ((int)(minute / 10) * 10))), minuteOnesColor, minuteOnesLEDs, minuteOnesMax, false);
+
+      if (blinkState) {
+        displayDigit((int)(minute / 10), minuteTensColor, minuteTensLEDs, minuteTensMax, false);
+      } else {
+        clearPixels(minuteTensLEDs, minuteTensMax);
+      }
+
+      strip.show();
+    }
+  }
+
+  // Set minute - ones digit
+  if (menuPosition == 3) {
+    if (millis() - lastMenuAction > menuTimeout) {
+      menuPosition = menuMax;
+    }
+    if(upButton.clicks > 0) {
+      minute += 1;
+      if (minute % 10 == 0) { minute -= 10; }
+      blinkState = false;
+      lastBlink = 0;
+      lastMenuAction = millis();
+    }
+    if(downButton.clicks > 0) {
+      minute -= 1;
+      if (minute % 10 == 9) { minute += 10; }
+      blinkState = false;
+      lastBlink = 0;
+      lastMenuAction = millis();
+    }
+
+    if ((millis() - lastBlink) > blinkInterval) {
+      lastBlink = millis();
+      blinkState = !blinkState;
+
+      displayDigit((int)(hour / 10), hourTensColor, hourTensLEDs, hourTensMax, false);
+      displayDigit(((int)(hour - ((int)(hour / 10) * 10))), hourOnesColor, hourOnesLEDs, hourOnesMax, false);
+      displayDigit((int)(minute / 10), minuteTensColor, minuteTensLEDs, minuteTensMax, false);
+
+      if (blinkState) {
+        displayDigit((int)(minute % 10), minuteOnesColor, minuteOnesLEDs, minuteOnesMax, false);
+      } else {
+        clearPixels(minuteOnesLEDs, minuteOnesMax);
+      }
+
+      strip.show();
+    }
+  }
+
+  if (menuPosition == menuMax) {
+    // Save time to RTC
+    menuPosition = 0;
+  }
+
   if (setButton.clicks > 0)   // short click
   {
-    //Serial.println(F("BTN_SET (short)"));
-    //displayDigit(curNum, minuteOnesColor, hourOnesLEDs, hourOnesMax, true);
-    //curNum++;
-    //if (curNum > hourOnesMax) { curNum = 1; }
+    if (menuPosition > 0) {
+      menuPosition++;
+      if (menuPosition > menuMax) {
+        menuPosition = 0;
+      }
+      lastMenuAction = millis();
+      Serial.print(F("Entering menu: "));
+      Serial.println(menuPosition);
+    }
   }
   if (setButton.clicks < 0)   // long click
   {
-    Serial.println(F("BTN_SET (long)"));
+    // long press is only used for entering menu
+    if (menuPosition == 0) {
+      menuPosition++;
+      lastMenuAction = millis();
+      Serial.println(F("Entering Menu Mode"));
+    }
   }
 
   /*
@@ -269,9 +411,9 @@ void displayDigit(int digit, uint32_t color, int pixelList[], int max, bool rand
       digitOrder[r] = digitOrder[i];
       digitOrder[i] = t;
     }
-    Serial.print(F("New order: "));
-    printArray(digitOrder, max);
-    Serial.println();
+    //Serial.print(F("New order: "));
+    //printArray(digitOrder, max);
+    //Serial.println();
   }
 
   clearPixels(pixelList, max);
