@@ -111,6 +111,15 @@ const static byte PROGMEM minuteTensMax     = 6;
 const static byte PROGMEM minuteOnesLEDs[9] = { 6, 7, 8, 11, 10, 9, 24, 25, 26 };
 const static byte PROGMEM minuteOnesMax     = 9;
 
+const static byte PROGMEM logo_T_size = 5;
+const static byte PROGMEM logo_T[logo_T_size] = { 1, 2, 3, 15, 20 };
+
+const static byte PROGMEM logo_I_size = 3;
+const static byte PROGMEM logo_I[logo_I_size] = { 5, 12, 23 };
+
+const static byte PROGMEM logo_X_size = 5;
+const static byte PROGMEM logo_X[logo_X_size] = { 6, 8, 10, 24, 26 };
+
 /*
  * Min, max brightness and interval between
  */
@@ -193,10 +202,6 @@ byte          brightness      = brightnessMin;          // Brightness out of 255
  * Vars for storing settings in EEPROM
  */
 
-// flag is used as to determine if we've saved valid data before
-// update flag if changing struct so we don't load bad data
-const byte flag = B10110010;
-
 struct ConfigSettings {
   byte          flag;
   bool          militaryTime;
@@ -217,18 +222,27 @@ void setRTCTime(void);   // Update time in RTC from global vars
 void displayDigit(byte, uint32_t, const byte[], byte, bool);   // Send a digit to the display
 void printArray(byte[], byte);                                 // Send an array to serial.print
 void clearPixels(const byte[], byte);                          // Turn off all pixels in an array
+void clearAllPixels(void); // Clear all pixels
+void displayLogo(void); // Display a logo
+void loadEEPROM(void); // Load saved values from EEPROM to RAM
 
 void setup() {
   Serial.begin(9600);
+
+  /*
+   * Fetch settings from EEPROM
+   */
+
+  loadEEPROM();
 
   /*
    * Init NeoPixel strip
    */
   strip.begin();   // INITIALIZE NeoPixel strip object (REQUIRED)
   // Set all pixels to off
-  for (byte i = 0; i < strip.numPixels(); i++) { strip.setPixelColor(i, 0); }
-  strip.show();                      // Commit the change
+  clearAllPixels();
   strip.setBrightness(brightness);   // Set BRIGHTNESS (max = 255)
+  strip.show();                      // Commit the change
 
   /*
    * Init buttons
@@ -274,48 +288,13 @@ void setup() {
   getRTCTime();
 
   /*
-   * Fetch settings from EEPROM, intialize if blank
-   */
-
-  EEPROM.get(0, settings);
-  if (settings.flag != flag) {
-    Serial.print(F("EEPROM flag invalid! Expected "));
-    Serial.print(flag, BIN);
-    Serial.print(F(", got "));
-    Serial.println(settings.flag, BIN);
-    Serial.println(F("Saving default config data"));
-
-    settings.flag            = flag;
-    settings.militaryTime    = militaryTime;
-    settings.updateInterval  = updateInterval;
-    settings.hourTensColor   = hourTensColor;
-    settings.hourOnesColor   = hourOnesColor;
-    settings.minuteTensColor = minuteTensColor;
-    settings.minuteOnesColor = minuteOnesColor;
-    settings.brightness      = brightness;
-
-    EEPROM.put(0, settings);
-  } else {
-    militaryTime   = settings.militaryTime;
-    updateInterval = settings.updateInterval;
-    brightness     = settings.brightness;
-    strip.setBrightness(brightness);
-
-    Serial.println(F("Loaded settings from EEPROM:"));
-    Serial.print(F("- militaryTime = "));
-    Serial.println(militaryTime, BIN);
-    Serial.print(F("- updateInterval = "));
-    Serial.println(updateInterval);
-    Serial.print(F("- brightness = "));
-    Serial.println(brightness);
-  }
-
-  /*
    * Initialize the RNG with input from a disconnected pin
    *
    * Hopefully that introduces some actual randomness
    */
   randomSeed(analogRead(0));
+
+  displayLogo();
 
   Serial.println(F("End setup()"));
 }
@@ -742,6 +721,10 @@ void clearPixels(const byte arr[], byte max) {
   for (byte i = 0; i < max; i++) { strip.setPixelColor(pgm_read_byte(&arr[i]), 0); }
 }
 
+void clearAllPixels(void) {
+  for (byte i = 0; i < strip.numPixels(); i++) { strip.setPixelColor(i, 0); }
+}
+
 /*
  * Print the values in an array to the Serial output
  */
@@ -794,4 +777,68 @@ void setRTCTime() {
     Serial.print(minute);
     Serial.println(F(":00"));
   }
+}
+
+void loadEEPROM(void) {
+  EEPROM.get(0, settings);
+  
+  // flag is used to determine if we've saved valid data before.
+  // if we read any value other than this, assume this is our first
+  // time running on this chip, or the data is corrupt.
+  //
+  // update flag by adding 1 if changing struct, so we don't load bad data.
+  const byte flag = B10110010;
+
+  if (settings.flag != flag) {
+    Serial.print(F("EEPROM flag invalid! Expected "));
+    Serial.print(flag, BIN);
+    Serial.print(F(", got "));
+    Serial.println(settings.flag, BIN);
+    Serial.println(F("Saving default config data"));
+
+    settings.flag            = flag;
+    settings.militaryTime    = militaryTime;
+    settings.updateInterval  = updateInterval;
+    settings.hourTensColor   = hourTensColor;
+    settings.hourOnesColor   = hourOnesColor;
+    settings.minuteTensColor = minuteTensColor;
+    settings.minuteOnesColor = minuteOnesColor;
+    settings.brightness      = brightness;
+
+    EEPROM.put(0, settings);
+  } else {
+    militaryTime   = settings.militaryTime;
+    updateInterval = settings.updateInterval;
+    brightness     = settings.brightness;
+    if (brightness > brightnessMax || brightness < brightnessMin) {
+      brightness = brightnessMin;
+    }
+    strip.setBrightness(brightness);
+
+    Serial.println(F("Loaded settings from EEPROM:"));
+    Serial.print(F("- militaryTime = "));
+    Serial.println(militaryTime, BIN);
+    Serial.print(F("- updateInterval = "));
+    Serial.println(updateInterval);
+    Serial.print(F("- brightness = "));
+    Serial.println(brightness);
+  }
+}
+
+void displayLogo(void) {
+  clearAllPixels();
+
+  for (byte i = 0; i < pgm_read_byte(&logo_T_size); i++) {
+    strip.setPixelColor(pgm_read_byte(&logo_T[i]), hourOnesColor);
+  }
+  for (byte i = 0; i < pgm_read_byte(&logo_I_size); i++) {
+    strip.setPixelColor(pgm_read_byte(&logo_I[i]), minuteTensColor);
+  }
+  for (byte i = 0; i < pgm_read_byte(&logo_X_size); i++) {
+    strip.setPixelColor(pgm_read_byte(&logo_X[i]), minuteOnesColor);
+  }
+
+  strip.show();
+
+  delay(3000);
 }
