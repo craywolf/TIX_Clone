@@ -102,30 +102,30 @@ Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 //     |
 //     18     ---    19 -- 20 -- 21    ---     22 -- 23    ---    24 --  25 -- 26
 
-int hourTensLEDs[3]   = { 0, 17, 18 };
-int hourTensMax       = 3;
-int hourOnesLEDs[9]   = { 1, 2, 3, 16, 15, 14, 19, 20, 21 };
-int hourOnesMax       = 9;
-int minuteTensLEDs[6] = { 4, 5, 13, 12, 22, 23 };
-int minuteTensMax     = 6;
-int minuteOnesLEDs[9] = { 6, 7, 8, 11, 10, 9, 24, 25, 26 };
-int minuteOnesMax     = 9;
+byte hourTensLEDs[3]   = { 0, 17, 18 };
+byte hourTensMax       = 3;
+byte hourOnesLEDs[9]   = { 1, 2, 3, 16, 15, 14, 19, 20, 21 };
+byte hourOnesMax       = 9;
+byte minuteTensLEDs[6] = { 4, 5, 13, 12, 22, 23 };
+byte minuteTensMax     = 6;
+byte minuteOnesLEDs[9] = { 6, 7, 8, 11, 10, 9, 24, 25, 26 };
+byte minuteOnesMax     = 9;
 
 /*
  * Min, max brightness and interval between
  */
 
-int brightnessMax  = 200;
-int brightnessMin  = 50;
-int brightnessStep = 50;
+byte brightnessMax  = 200;
+byte brightnessMin  = 50;
+byte brightnessStep = 50;
 
 /* 
  * Internal time tracking (between updates from RTC)
  */
 
-int hour   = 0;
-int minute = 0;
-int second = 0;
+byte hour   = 0;
+byte minute = 0;
+byte second = 0;
 
 /*
  * Tracking of event timing in internal loops
@@ -149,9 +149,9 @@ unsigned long lastDisplayUpdate = 0;        // Last time we updated the pixel di
 // 4 = Save settings and resume clock
 // 5 = Set update interval
 // 6 = Save update interval
-int           menuPosition   = 0;
-int           menuSaveTime   = 4;       // Menu position where time gets saved to RTC
-int           menuMax        = 6;       // Max menu position
+byte           menuPosition   = 0;
+byte           menuSaveTime   = 4;       // Menu position where time gets saved to RTC
+byte           menuMax        = 6;       // Max menu position
 unsigned long lastMenuAction = 0;       // Time of last button press in menu
 unsigned long menuTimeout    = 20000;   // Menu timeout (no input)
 
@@ -169,9 +169,9 @@ const uint32_t clrPurple = strip.Color(0, 139, 139);
  * Update interval options
  */
 
-const int updateIntervalFast   = 1000;    // 1 second
-const int updateIntervalMedium = 4000;    // 4 seconds
-const int updateIntervalSlow   = 60000;   // 60 seconds
+const unsigned int updateIntervalFast   = 1000;    // 1 second
+const unsigned int updateIntervalMedium = 4000;    // 4 seconds
+const unsigned int updateIntervalSlow   = 60000;   // 60 seconds
 
 /*
  * Default values for preferences
@@ -186,7 +186,7 @@ uint32_t      hourTensColor   = clrRed;                 // Color of Hour Tens di
 uint32_t      hourOnesColor   = clrGreen;               // Color of Hour Ones digit
 uint32_t      minuteTensColor = clrBlue;                // Color of Minutes Tens digit
 uint32_t      minuteOnesColor = clrPurple;              // Color of Minutes Ones digit
-int           brightness      = brightnessMin;          // Brightness out of 255
+byte           brightness      = brightnessMin;          // Brightness out of 255
 
 /*
  * Vars for storing settings in EEPROM
@@ -194,7 +194,7 @@ int           brightness      = brightnessMin;          // Brightness out of 255
 
 // flag is used as to determine if we've saved valid data before
 // update flag if changing struct so we don't load bad data
-const byte flag = B10110001;
+const byte flag = B10110010;
 
 struct ConfigSettings {
     byte flag;
@@ -204,7 +204,7 @@ struct ConfigSettings {
     uint32_t hourOnesColor;
     uint32_t minuteTensColor;
     uint32_t minuteOnesColor;
-    int brightness;
+    byte brightness;
 };
 ConfigSettings settings;
 
@@ -213,9 +213,9 @@ ConfigSettings settings;
  */
 void getRTCTime(void);                                // Fetch time from RTC into global vars
 void setRTCTime(void);                                // Update time in RTC from global vars
-void displayDigit(int, uint32_t, int[], int, bool);   // Send a digit to the display
-void printArray(int[], int);                          // Send an array to serial.print
-void clearPixels(int[], int);                         // Turn off all pixels in an array
+void displayDigit(byte, uint32_t, byte[], byte, bool);   // Send a digit to the display
+void printArray(byte[], byte);                          // Send an array to serial.print
+void clearPixels(byte[], byte);                         // Turn off all pixels in an array
 
 void setup() {
   Serial.begin(9600);
@@ -225,7 +225,7 @@ void setup() {
    */
   strip.begin();   // INITIALIZE NeoPixel strip object (REQUIRED)
   // Set all pixels to off
-  for (unsigned int i = 0; i < strip.numPixels(); i++) { strip.setPixelColor(i, 0); }
+  for (byte i = 0; i < strip.numPixels(); i++) { strip.setPixelColor(i, 0); }
   strip.show();                      // Commit the change
   strip.setBrightness(brightness);   // Set BRIGHTNESS (max = 255)
 
@@ -377,7 +377,7 @@ void loop() {
     }
 
     // Hour is always tracked as 24h, updated to 12h for display
-    int displayHour = hour;
+    byte displayHour = hour;
     if (!militaryTime) {
       if (displayHour > 12) { displayHour -= 12; }
     }
@@ -698,7 +698,7 @@ void loop() {
  * randomize - use a random order, or the pixelList array-defined order
  */
 
-void displayDigit(int digit, uint32_t color, int pixelList[], int max, bool randomize) {
+void displayDigit(byte digit, uint32_t color, byte pixelList[], byte max, bool randomize) {
   /*
   Serial.print(F("Displaying digit "));
   Serial.print(digit);
@@ -708,17 +708,17 @@ void displayDigit(int digit, uint32_t color, int pixelList[], int max, bool rand
   */
 
   // Create an array of digits 0 to max-1.
-  int digitOrder[max];
-  for (int i = 0; i < max; i++) {
+  byte digitOrder[max];
+  for (byte i = 0; i < max; i++) {
     digitOrder[i] = i;
   }
 
   // Shuffle that array if we're randomizing the digits
   if (randomize) {
     //Serial.println(F("Randomizing digit order"));
-    for (int i = 0; i < max; i++) {
-      int r = random(0, max);
-      int t = digitOrder[r];
+    for (byte i = 0; i < max; i++) {
+      byte r = random(0, max);
+      byte t = digitOrder[r];
 
       digitOrder[r] = digitOrder[i];
       digitOrder[i] = t;
@@ -733,7 +733,7 @@ void displayDigit(int digit, uint32_t color, int pixelList[], int max, bool rand
 
   // For however many digits we're setting, walk through the
   // (possibly) shuffled list of 0..max-1, and turn that pixel on
-  for (int i = 0; i < digit; i++) {
+  for (byte i = 0; i < digit; i++) {
     strip.setPixelColor(pixelList[digitOrder[i]], color);
   }
 }
@@ -742,8 +742,8 @@ void displayDigit(int digit, uint32_t color, int pixelList[], int max, bool rand
  * Set all pixels in arr to off (black)
  */
 
-void clearPixels(int arr[], int max) {
-  for (int i = 0; i < max; i++){
+void clearPixels(byte arr[], byte max) {
+  for (byte i = 0; i < max; i++){
     strip.setPixelColor(arr[i], 0);
   }
 }
@@ -752,9 +752,9 @@ void clearPixels(int arr[], int max) {
  * Print the values in an array to the Serial output
  */
 
-void printArray(int arr[], int max) {
+void printArray(byte arr[], byte max) {
   if (Serial) {
-    for (int i = 0; i < max; i++) {
+    for (byte i = 0; i < max; i++) {
       Serial.print(arr[i]);
       Serial.print(F(", "));
     }
