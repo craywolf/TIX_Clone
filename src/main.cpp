@@ -102,14 +102,14 @@ Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 //     |
 //     18     ---    19 -- 20 -- 21    ---     22 -- 23    ---    24 --  25 -- 26
 
-byte hourTensLEDs[3]   = { 0, 17, 18 };
-byte hourTensMax       = 3;
-byte hourOnesLEDs[9]   = { 1, 2, 3, 16, 15, 14, 19, 20, 21 };
-byte hourOnesMax       = 9;
-byte minuteTensLEDs[6] = { 4, 5, 13, 12, 22, 23 };
-byte minuteTensMax     = 6;
-byte minuteOnesLEDs[9] = { 6, 7, 8, 11, 10, 9, 24, 25, 26 };
-byte minuteOnesMax     = 9;
+const static byte PROGMEM hourTensLEDs[3]   = { 0, 17, 18 };
+const static byte PROGMEM hourTensMax       = 3;
+const static byte PROGMEM hourOnesLEDs[9]   = { 1, 2, 3, 16, 15, 14, 19, 20, 21 };
+const static byte PROGMEM hourOnesMax       = 9;
+const static byte PROGMEM minuteTensLEDs[6] = { 4, 5, 13, 12, 22, 23 };
+const static byte PROGMEM minuteTensMax     = 6;
+const static byte PROGMEM minuteOnesLEDs[9] = { 6, 7, 8, 11, 10, 9, 24, 25, 26 };
+const static byte PROGMEM minuteOnesMax     = 9;
 
 /*
  * Min, max brightness and interval between
@@ -149,9 +149,9 @@ unsigned long lastDisplayUpdate = 0;        // Last time we updated the pixel di
 // 4 = Save settings and resume clock
 // 5 = Set update interval
 // 6 = Save update interval
-byte           menuPosition   = 0;
-byte           menuSaveTime   = 4;       // Menu position where time gets saved to RTC
-byte           menuMax        = 6;       // Max menu position
+byte          menuPosition   = 0;
+byte          menuSaveTime   = 4;       // Menu position where time gets saved to RTC
+byte          menuMax        = 6;       // Max menu position
 unsigned long lastMenuAction = 0;       // Time of last button press in menu
 unsigned long menuTimeout    = 20000;   // Menu timeout (no input)
 
@@ -163,6 +163,7 @@ const uint32_t clrRed    = strip.Color(0, 255, 0);
 const uint32_t clrGreen  = strip.Color(255, 0, 0);
 const uint32_t clrBlue   = strip.Color(0, 0, 255);
 const uint32_t clrPurple = strip.Color(0, 139, 139);
+const uint32_t clrWhite  = strip.Color(255, 255, 255);
 //const uint32_t clrYellow = strip.Color(255, 255, 0);
 
 /*
@@ -186,7 +187,7 @@ uint32_t      hourTensColor   = clrRed;                 // Color of Hour Tens di
 uint32_t      hourOnesColor   = clrGreen;               // Color of Hour Ones digit
 uint32_t      minuteTensColor = clrBlue;                // Color of Minutes Tens digit
 uint32_t      minuteOnesColor = clrPurple;              // Color of Minutes Ones digit
-byte           brightness      = brightnessMin;          // Brightness out of 255
+byte          brightness      = brightnessMin;          // Brightness out of 255
 
 /*
  * Vars for storing settings in EEPROM
@@ -213,9 +214,9 @@ ConfigSettings settings;
  */
 void getRTCTime(void);                                // Fetch time from RTC into global vars
 void setRTCTime(void);                                // Update time in RTC from global vars
-void displayDigit(byte, uint32_t, byte[], byte, bool);   // Send a digit to the display
+void displayDigit(byte, uint32_t, const byte[], byte, bool);   // Send a digit to the display
 void printArray(byte[], byte);                          // Send an array to serial.print
-void clearPixels(byte[], byte);                         // Turn off all pixels in an array
+void clearPixels(const byte[], byte);                         // Turn off all pixels in an array
 
 void setup() {
   Serial.begin(9600);
@@ -560,15 +561,12 @@ void loop() {
         default:
         case updateIntervalFast:
           updateInterval = updateIntervalMedium;
-          // displayDigit(2, strip.Color(255,255,255), hourTensLEDs, hourTensMax, false);
           break;
         case updateIntervalMedium:
           updateInterval = updateIntervalSlow;
-          // displayDigit(3, strip.Color(255,255,255), hourTensLEDs, hourTensMax, false);
           break;
         case updateIntervalSlow:
           updateInterval = updateIntervalFast;
-          // displayDigit(1, strip.Color(255,255,255), hourTensLEDs, hourTensMax, false);
           break;
       }
       strip.show();
@@ -583,13 +581,13 @@ void loop() {
 
       switch (updateInterval) {
         case updateIntervalFast:
-          displayDigit(1, strip.Color(255, 255, 255), hourTensLEDs, hourTensMax, false);
+          displayDigit(1, clrWhite, hourTensLEDs, hourTensMax, false);
           break;
         case updateIntervalMedium:
-          displayDigit(2, strip.Color(255, 255, 255), hourTensLEDs, hourTensMax, false);
+          displayDigit(2, clrWhite, hourTensLEDs, hourTensMax, false);
           break;
         case updateIntervalSlow:
-          displayDigit(3, strip.Color(255, 255, 255), hourTensLEDs, hourTensMax, false);
+          displayDigit(3, clrWhite, hourTensLEDs, hourTensMax, false);
           break;
         default:
           clearPixels(hourTensLEDs, hourTensMax);
@@ -698,7 +696,7 @@ void loop() {
  * randomize - use a random order, or the pixelList array-defined order
  */
 
-void displayDigit(byte digit, uint32_t color, byte pixelList[], byte max, bool randomize) {
+void displayDigit(byte digit, uint32_t color, const byte pixelList[], byte max, bool randomize) {
   /*
   Serial.print(F("Displaying digit "));
   Serial.print(digit);
@@ -734,7 +732,7 @@ void displayDigit(byte digit, uint32_t color, byte pixelList[], byte max, bool r
   // For however many digits we're setting, walk through the
   // (possibly) shuffled list of 0..max-1, and turn that pixel on
   for (byte i = 0; i < digit; i++) {
-    strip.setPixelColor(pixelList[digitOrder[i]], color);
+    strip.setPixelColor(pgm_read_byte(&pixelList[digitOrder[i]]), color);
   }
 }
 
@@ -742,9 +740,9 @@ void displayDigit(byte digit, uint32_t color, byte pixelList[], byte max, bool r
  * Set all pixels in arr to off (black)
  */
 
-void clearPixels(byte arr[], byte max) {
+void clearPixels(const byte arr[], byte max) {
   for (byte i = 0; i < max; i++){
-    strip.setPixelColor(arr[i], 0);
+    strip.setPixelColor(pgm_read_byte(&arr[i]), 0);
   }
 }
 
