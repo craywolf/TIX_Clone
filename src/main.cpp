@@ -111,13 +111,13 @@ const static byte PROGMEM minuteTensMax     = 6;
 const static byte PROGMEM minuteOnesLEDs[9] = { 6, 7, 8, 11, 10, 9, 24, 25, 26 };
 const static byte PROGMEM minuteOnesMax     = 9;
 
-const static byte PROGMEM logo_T_size = 5;
+const static byte PROGMEM logo_T_size         = 5;
 const static byte PROGMEM logo_T[logo_T_size] = { 1, 3, 15, 19, 21 };
 
-const static byte PROGMEM logo_I_size = 3;
+const static byte PROGMEM logo_I_size         = 3;
 const static byte PROGMEM logo_I[logo_I_size] = { 5, 12, 23 };
 
-const static byte PROGMEM logo_X_size = 5;
+const static byte PROGMEM logo_X_size         = 5;
 const static byte PROGMEM logo_X[logo_X_size] = { 6, 8, 10, 24, 26 };
 
 /*
@@ -217,14 +217,14 @@ ConfigSettings settings;
 /*
  * Function Declarations
  */
-void getRTCTime(void);   // Fetch time from RTC into global vars
-void setRTCTime(void);   // Update time in RTC from global vars
+void getRTCTime(void);                  // Fetch time from RTC into global vars
+void setRTCTime(void);                  // Update time in RTC from global vars
+void printArray(byte[], byte);          // Send an array to serial.print
+void clearPixels(const byte[], byte);   // Turn off all pixels in an array
+void clearAllPixels(void);              // Clear all pixels
+void displayLogo(void);                 // Display a logo
+void loadEEPROM(void);                  // Load saved values from EEPROM to RAM
 void displayDigit(byte, uint32_t, const byte[], byte, bool);   // Send a digit to the display
-void printArray(byte[], byte);                                 // Send an array to serial.print
-void clearPixels(const byte[], byte);                          // Turn off all pixels in an array
-void clearAllPixels(void); // Clear all pixels
-void displayLogo(void); // Display a logo
-void loadEEPROM(void); // Load saved values from EEPROM to RAM
 
 void setup() {
   Serial.begin(9600);
@@ -781,7 +781,7 @@ void setRTCTime() {
 
 void loadEEPROM(void) {
   EEPROM.get(0, settings);
-  
+
   // flag is used to determine if we've saved valid data before.
   // if we read any value other than this, assume this is our first
   // time running on this chip, or the data is corrupt.
@@ -810,9 +810,7 @@ void loadEEPROM(void) {
     militaryTime   = settings.militaryTime;
     updateInterval = settings.updateInterval;
     brightness     = settings.brightness;
-    if (brightness > brightnessMax || brightness < brightnessMin) {
-      brightness = brightnessMin;
-    }
+    if (brightness > brightnessMax || brightness < brightnessMin) { brightness = brightnessMin; }
     strip.setBrightness(brightness);
 
     Serial.println(F("Loaded settings from EEPROM:"));
