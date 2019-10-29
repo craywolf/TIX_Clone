@@ -1,8 +1,8 @@
 #include <Adafruit_NeoPixel.h>
 #include <Arduino.h>
 #include <ClickButton.h>
-#include <RTClib.h>
 #include <EEPROM.h>
+#include <RTClib.h>
 
 /*
  * Official TIX menu functions:
@@ -23,22 +23,22 @@
  * - Middle LED  = 4s (default)
  * - Bottom LED  = 1m
  * - Press 'Set' or long press 'Up' to return
- * 
+ *
  * New: Setting color pattern
  * - Hold 'Down' for 2 seconds (in original this did nothing)
  * - Tens-of-hours flashes, press 'Up' to cycle colors, press 'Down' to move to next
  * - Ones-of-hours flashes, " "
  * - Tens-of-minutes flashes, " "
  * - Ones-of-minutes flashes, " ", press 'Down' to save
- * 
+ *
  * New: Setting 12/24 hour time
  * - Press 'Set' button to toggle
  */
 
 /*
- * 
+ *
  * Set up attached hardware
- * 
+ *
  */
 
 /*
@@ -86,7 +86,7 @@ Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 /*
  *
  * Global variables
- * 
+ *
  */
 
 /*
@@ -119,7 +119,7 @@ byte brightnessMax  = 200;
 byte brightnessMin  = 50;
 byte brightnessStep = 50;
 
-/* 
+/*
  * Internal time tracking (between updates from RTC)
  */
 
@@ -164,7 +164,7 @@ const uint32_t clrGreen  = strip.Color(255, 0, 0);
 const uint32_t clrBlue   = strip.Color(0, 0, 255);
 const uint32_t clrPurple = strip.Color(0, 139, 139);
 const uint32_t clrWhite  = strip.Color(255, 255, 255);
-//const uint32_t clrYellow = strip.Color(255, 255, 0);
+// const uint32_t clrYellow = strip.Color(255, 255, 0);
 
 /*
  * Update interval options
@@ -176,7 +176,7 @@ const unsigned int updateIntervalSlow   = 60000;   // 60 seconds
 
 /*
  * Default values for preferences
- * 
+ *
  * Will be overwritten by EEPROM settings if found, otherwise
  * EEPROM is initialized with these values
  */
@@ -198,25 +198,25 @@ byte          brightness      = brightnessMin;          // Brightness out of 255
 const byte flag = B10110010;
 
 struct ConfigSettings {
-    byte flag;
-    bool militaryTime;
-    unsigned long updateInterval;
-    uint32_t hourTensColor;
-    uint32_t hourOnesColor;
-    uint32_t minuteTensColor;
-    uint32_t minuteOnesColor;
-    byte brightness;
+  byte          flag;
+  bool          militaryTime;
+  unsigned long updateInterval;
+  uint32_t      hourTensColor;
+  uint32_t      hourOnesColor;
+  uint32_t      minuteTensColor;
+  uint32_t      minuteOnesColor;
+  byte          brightness;
 };
 ConfigSettings settings;
 
 /*
  * Function Declarations
  */
-void getRTCTime(void);                                // Fetch time from RTC into global vars
-void setRTCTime(void);                                // Update time in RTC from global vars
+void getRTCTime(void);   // Fetch time from RTC into global vars
+void setRTCTime(void);   // Update time in RTC from global vars
 void displayDigit(byte, uint32_t, const byte[], byte, bool);   // Send a digit to the display
-void printArray(byte[], byte);                          // Send an array to serial.print
-void clearPixels(const byte[], byte);                         // Turn off all pixels in an array
+void printArray(byte[], byte);                                 // Send an array to serial.print
+void clearPixels(const byte[], byte);                          // Turn off all pixels in an array
 
 void setup() {
   Serial.begin(9600);
@@ -312,7 +312,7 @@ void setup() {
 
   /*
    * Initialize the RNG with input from a disconnected pin
-   * 
+   *
    * Hopefully that introduces some actual randomness
    */
   randomSeed(analogRead(0));
@@ -687,7 +687,7 @@ void loop() {
 
 /*
  * Update the digit display
- * 
+ *
  * Takes as arguments:
  * digit - the number we're displaying from 0 to max-1 (based on number of pixels in this array)
  * color - NeoPixel RGB color value
@@ -707,13 +707,11 @@ void displayDigit(byte digit, uint32_t color, const byte pixelList[], byte max, 
 
   // Create an array of digits 0 to max-1.
   byte digitOrder[max];
-  for (byte i = 0; i < max; i++) {
-    digitOrder[i] = i;
-  }
+  for (byte i = 0; i < max; i++) { digitOrder[i] = i; }
 
   // Shuffle that array if we're randomizing the digits
   if (randomize) {
-    //Serial.println(F("Randomizing digit order"));
+    // Serial.println(F("Randomizing digit order"));
     for (byte i = 0; i < max; i++) {
       byte r = random(0, max);
       byte t = digitOrder[r];
@@ -721,9 +719,9 @@ void displayDigit(byte digit, uint32_t color, const byte pixelList[], byte max, 
       digitOrder[r] = digitOrder[i];
       digitOrder[i] = t;
     }
-    //Serial.print(F("New order: "));
-    //printArray(digitOrder, max);
-    //Serial.println();
+    // Serial.print(F("New order: "));
+    // printArray(digitOrder, max);
+    // Serial.println();
   }
 
   // Clear this set of digits
@@ -741,9 +739,7 @@ void displayDigit(byte digit, uint32_t color, const byte pixelList[], byte max, 
  */
 
 void clearPixels(const byte arr[], byte max) {
-  for (byte i = 0; i < max; i++){
-    strip.setPixelColor(pgm_read_byte(&arr[i]), 0);
-  }
+  for (byte i = 0; i < max; i++) { strip.setPixelColor(pgm_read_byte(&arr[i]), 0); }
 }
 
 /*
@@ -763,23 +759,23 @@ void printArray(byte arr[], byte max) {
  * Fetch time from RTC into global vars
  */
 void getRTCTime() {
-    DateTime now = rtc.now();
+  DateTime now = rtc.now();
 
-    hour   = now.hour();
-    //if (hour > 12) { hour -= 12; }
-    minute = now.minute();
-    second = now.second();
+  hour = now.hour();
+  // if (hour > 12) { hour -= 12; }
+  minute = now.minute();
+  second = now.second();
 
-    if (Serial) {
-        Serial.print(F("Updating from RTC at "));
-        Serial.println(millis());
+  if (Serial) {
+    Serial.print(F("Updating from RTC at "));
+    Serial.println(millis());
 
-        Serial.print(hour);
-        Serial.print(F(":"));
-        Serial.print(minute);
-        Serial.print(F(":"));
-        Serial.println(second);
-    }
+    Serial.print(hour);
+    Serial.print(F(":"));
+    Serial.print(minute);
+    Serial.print(F(":"));
+    Serial.println(second);
+  }
 }
 
 /*
@@ -787,15 +783,15 @@ void getRTCTime() {
  */
 
 void setRTCTime() {
-    // This clock isn't date-aware so it doesn't matter what date we set here
-    rtc.adjust(DateTime(2014, 1, 1, hour, minute, 0));
+  // This clock isn't date-aware so it doesn't matter what date we set here
+  rtc.adjust(DateTime(2014, 1, 1, hour, minute, 0));
 
-    if (Serial) {
-        Serial.print(F("Setting RTC to "));
+  if (Serial) {
+    Serial.print(F("Setting RTC to "));
 
-        Serial.print(hour);
-        Serial.print(F(":"));
-        Serial.print(minute);
-        Serial.println(F(":00"));
-    }
+    Serial.print(hour);
+    Serial.print(F(":"));
+    Serial.print(minute);
+    Serial.println(F(":00"));
+  }
 }
