@@ -835,8 +835,9 @@ void displayLogo(void) {
   for (byte i = 0; i < pgm_read_byte(&logo_X_size); i++) {
     strip.setPixelColor(pgm_read_byte(&logo_X[i]), minuteOnesColor);
   }
-
   strip.show();
-
   delay(3000);
+
+  clearAllPixels();
+  delay(1000);
 }
