@@ -112,7 +112,7 @@ const static byte PROGMEM minuteOnesLEDs[9] = { 6, 7, 8, 11, 10, 9, 24, 25, 26 }
 const static byte PROGMEM minuteOnesMax     = 9;
 
 const static byte PROGMEM logo_T_size = 5;
-const static byte PROGMEM logo_T[logo_T_size] = { 1, 2, 3, 15, 20 };
+const static byte PROGMEM logo_T[logo_T_size] = { 1, 3, 15, 19, 21 };
 
 const static byte PROGMEM logo_I_size = 3;
 const static byte PROGMEM logo_I[logo_I_size] = { 5, 12, 23 };
