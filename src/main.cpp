@@ -222,6 +222,7 @@ void getRTCTime(void);                  // Fetch time from RTC into global vars
 void setRTCTime(void);                  // Update time in RTC from global vars
 void printArray(byte[], byte);          // Send an array to serial.print
 void clearPixels(const byte[], byte);   // Turn off all pixels in an array
+void clearPixels(const byte[], byte, uint32_t);   // Turn off all pixels in an array
 void displayLogo(void);                 // Display a logo
 void loadEEPROM(void);                  // Load saved values from EEPROM to RAM
 void displayDigit(byte, uint32_t, const byte[], byte, bool);   // Send a digit to the display
@@ -368,6 +369,8 @@ void loop() {
     // I think the real TIX handles this by not having military time.
     if (displayHour == 0) { displayHour = 12; }
 
+    strip.clear();
+
     displayDigit((int)(displayHour / 10), hourTensColor, hourTensLEDs, hourTensMax, true);
     displayDigit(((int)(displayHour - ((int)(displayHour / 10) * 10))), hourOnesColor, hourOnesLEDs,
                  hourOnesMax, true);
@@ -421,21 +424,17 @@ void loop() {
       lastBlink  = millis();
       blinkState = !blinkState;
 
+      strip.fill(clrDimWhite);
+
       // Minutes digits don't blink
       displayDigit((int)(minute / 10), minuteTensColor, minuteTensLEDs, minuteTensMax, false);
       displayDigit(((int)(minute - ((int)(minute / 10) * 10))), minuteOnesColor, minuteOnesLEDs,
                    minuteOnesMax, false);
 
       if (blinkState) {
-        if (hour == 0) {
-          displayDigit((int)(hour / 10), clrDimWhite, hourTensLEDs, hourTensMax, false);
-          displayDigit(((int)(hour - ((int)(hour / 10) * 10))), hourOnesColor, hourOnesLEDs,
-                       hourOnesMax, false);
-        } else {
-          displayDigit((int)(hour / 10), clrDimWhite, hourTensLEDs, hourTensMax, false);
-          displayDigit(((int)(hour - ((int)(hour / 10) * 10))), hourOnesColor, hourOnesLEDs,
-                       hourOnesMax, false);
-        }
+        displayDigit((int)(hour / 10), hourTensColor, hourTensLEDs, hourTensMax, false);
+        displayDigit(((int)(hour - ((int)(hour / 10) * 10))), hourOnesColor, hourOnesLEDs,
+                     hourOnesMax, false);
       } else {
         clearPixels(hourOnesLEDs, hourOnesMax);
         clearPixels(hourTensLEDs, hourTensMax);
@@ -481,6 +480,8 @@ void loop() {
     if ((millis() - lastBlink) > blinkInterval) {
       lastBlink  = millis();
       blinkState = !blinkState;
+
+      strip.fill(clrDimWhite);
 
       // Hours digits and minute ones don't blink
       displayDigit((int)(hour / 10), hourTensColor, hourTensLEDs, hourTensMax, false);
@@ -536,6 +537,8 @@ void loop() {
     if ((millis() - lastBlink) > blinkInterval) {
       lastBlink  = millis();
       blinkState = !blinkState;
+
+      strip.fill(clrDimWhite);
 
       // Hours digits and minute tens don't blink
       displayDigit((int)(hour / 10), hourTensColor, hourTensLEDs, hourTensMax, false);
@@ -758,7 +761,7 @@ void displayDigit(byte digit, uint32_t color, const byte pixelList[], byte max, 
   }
 
   // Clear this set of digits
-  clearPixels(pixelList, max);
+  //clearPixels(pixelList, max);
 
   // For however many digits we're setting, walk through the
   // (possibly) shuffled list of 0..max-1, and turn that pixel on
@@ -768,11 +771,15 @@ void displayDigit(byte digit, uint32_t color, const byte pixelList[], byte max, 
 }
 
 /*
- * Set all pixels in arr to off (black)
+ * Set all pixels in arr to off (black) or an optional passed color
  */
 
 void clearPixels(const byte arr[], byte max) {
-  for (byte i = 0; i < max; i++) { strip.setPixelColor(pgm_read_byte(&arr[i]), 0); }
+  clearPixels(arr, max, 0);
+}
+
+void clearPixels(const byte arr[], byte max, uint32_t color) {
+  for (byte i = 0; i < max; i++) { strip.setPixelColor(pgm_read_byte(&arr[i]), color); }
 }
 
 /*
