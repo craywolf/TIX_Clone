@@ -639,11 +639,22 @@ void loop() {
       Serial.println(menuPosition);
     }
     // If we're not in a menu, pressing this switches between 12/24h time
-    // TODO: Add some signal so we know what's going on if hour < 12?
     else {
       militaryTime          = !militaryTime;
       settings.militaryTime = militaryTime;
       EEPROM.put(0, settings);
+
+      strip.clear();
+      if (militaryTime) {
+        displayDigit(2, clrWhite, hourTensLEDs, hourTensMax, false);
+        displayDigit(4, clrWhite, hourOnesLEDs, hourOnesMax, false);
+      } else {
+        displayDigit(1, clrWhite, hourTensLEDs, hourTensMax, false);
+        displayDigit(2, clrWhite, hourOnesLEDs, hourOnesMax, false);
+      }
+
+      strip.show();
+      delay(1000);
 
       // Update display immediately
       lastDisplayUpdate = 0;
