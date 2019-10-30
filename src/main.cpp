@@ -168,11 +168,12 @@ unsigned long menuTimeout    = 20000;   // Menu timeout (no input)
  * Predefined colors
  */
 
-const uint32_t clrRed    = strip.Color(0, 255, 0);
-const uint32_t clrGreen  = strip.Color(255, 0, 0);
-const uint32_t clrBlue   = strip.Color(0, 0, 255);
-const uint32_t clrPurple = strip.Color(0, 139, 139);
-const uint32_t clrWhite  = strip.Color(255, 255, 255);
+const uint32_t clrRed      = strip.Color(0, 255, 0);
+const uint32_t clrGreen    = strip.Color(255, 0, 0);
+const uint32_t clrBlue     = strip.Color(0, 0, 255);
+const uint32_t clrPurple   = strip.Color(0, 139, 139);
+const uint32_t clrWhite    = strip.Color(255, 255, 255);
+const uint32_t clrDimWhite = strip.Color(50, 50, 50);
 // const uint32_t clrYellow = strip.Color(255, 255, 0);
 
 /*
@@ -367,7 +368,6 @@ void loop() {
     // I think the real TIX handles this by not having military time.
     if (displayHour == 0) { displayHour = 12; }
 
-
     displayDigit((int)(displayHour / 10), hourTensColor, hourTensLEDs, hourTensMax, true);
     displayDigit(((int)(displayHour - ((int)(displayHour / 10) * 10))), hourOnesColor, hourOnesLEDs,
                  hourOnesMax, true);
@@ -427,9 +427,15 @@ void loop() {
                    minuteOnesMax, false);
 
       if (blinkState) {
-        displayDigit((int)(hour / 10), hourTensColor, hourTensLEDs, hourTensMax, false);
-        displayDigit(((int)(hour - ((int)(hour / 10) * 10))), hourOnesColor, hourOnesLEDs,
-                     hourOnesMax, false);
+        if (hour == 0) {
+          displayDigit((int)(hour / 10), clrDimWhite, hourTensLEDs, hourTensMax, false);
+          displayDigit(((int)(hour - ((int)(hour / 10) * 10))), hourOnesColor, hourOnesLEDs,
+                       hourOnesMax, false);
+        } else {
+          displayDigit((int)(hour / 10), clrDimWhite, hourTensLEDs, hourTensMax, false);
+          displayDigit(((int)(hour - ((int)(hour / 10) * 10))), hourOnesColor, hourOnesLEDs,
+                       hourOnesMax, false);
+        }
       } else {
         clearPixels(hourOnesLEDs, hourOnesMax);
         clearPixels(hourTensLEDs, hourTensMax);
@@ -484,7 +490,11 @@ void loop() {
                    minuteOnesMax, false);
 
       if (blinkState) {
-        displayDigit((int)(minute / 10), minuteTensColor, minuteTensLEDs, minuteTensMax, false);
+        if ((int)(minute / 10) == 0) {
+          displayDigit(minuteTensMax, clrDimWhite, minuteTensLEDs, minuteTensMax, false);
+        } else {
+          displayDigit((int)(minute / 10), minuteTensColor, minuteTensLEDs, minuteTensMax, false);
+        }
       } else {
         clearPixels(minuteTensLEDs, minuteTensMax);
       }
@@ -534,7 +544,12 @@ void loop() {
       displayDigit((int)(minute / 10), minuteTensColor, minuteTensLEDs, minuteTensMax, false);
 
       if (blinkState) {
-        displayDigit((int)(minute % 10), minuteOnesColor, minuteOnesLEDs, minuteOnesMax, false);
+        // Instead of being blank for 0, blink all white
+        if ((int)(minute % 10) == 0) {
+          displayDigit(minuteOnesMax, clrDimWhite, minuteOnesLEDs, minuteOnesMax, false);
+        } else {
+          displayDigit((int)(minute % 10), minuteOnesColor, minuteOnesLEDs, minuteOnesMax, false);
+        }
       } else {
         clearPixels(minuteOnesLEDs, minuteOnesMax);
       }
@@ -721,7 +736,9 @@ void displayDigit(byte digit, uint32_t color, const byte pixelList[], byte max, 
       // Check each digit we're to light up
       // If any are not lit, we have a change
       for (byte i = 0; i < digit; i++) {
-        if (strip.getPixelColor(pgm_read_byte(&pixelList[digitOrder[i]])) == 0) { randomize = false; }
+        if (strip.getPixelColor(pgm_read_byte(&pixelList[digitOrder[i]])) == 0) {
+          randomize = false;
+        }
       }
     }
   }
