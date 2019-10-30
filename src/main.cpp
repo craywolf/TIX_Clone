@@ -565,6 +565,9 @@ void loop() {
 
     // Reset menu to none
     menuPosition = 0;
+
+    // Make sure we update the display immediately
+    lastDisplayUpdate = 0;
   }
 
   // Set display update interval
