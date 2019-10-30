@@ -652,6 +652,8 @@ void loop() {
       settings.militaryTime = militaryTime;
       EEPROM.put(0, settings);
 
+      strip.clear();
+
       if (militaryTime) {
         displayDigit(2, clrWhite, 0, hourTensLEDs, hourTensMax, false);
         displayDigit(4, clrWhite, 0, hourOnesLEDs, hourOnesMax, false);
