@@ -308,36 +308,38 @@ void loop() {
   upButton.Update();
   downButton.Update();
 
-  // Update time from RTC
-  if ((unsigned long)(millis() - lastRTCUpdate) > RTCInterval) {
-    lastRTCUpdate = millis();
-    lastTick      = lastRTCUpdate;
-    getRTCTime();
-  }
-
-  // Update our stored time vars once every second
-  if ((unsigned long)(millis() - lastTick) >= 1000) {
-    Serial.println(F("Updating seconds"));
-    Serial.print(F("lastDisplayUpdate = "));
-    Serial.print(lastDisplayUpdate);
-    Serial.print(F(", millis() = "));
-    Serial.print(millis());
-    Serial.println();
-
-    lastTick = millis();
-    second++;
-
-    if (second > 59) {
-      second = 0;
-      minute++;
-    }
-    if (minute > 59) {
-      minute = 0;
-      hour++;
+  if (menuPosition == 0) {
+    // Update time from RTC
+    if ((unsigned long)(millis() - lastRTCUpdate) > RTCInterval) {
+      lastRTCUpdate = millis();
+      lastTick      = lastRTCUpdate;
+      getRTCTime();
     }
 
-    // hour is kept as 24h internally, changed to 12h for display if militaryTime = false
-    if (hour > 23) { hour = 0; }
+    // Update our stored time vars once every second
+    if ((unsigned long)(millis() - lastTick) >= 1000) {
+      Serial.println(F("Updating seconds"));
+      Serial.print(F("lastDisplayUpdate = "));
+      Serial.print(lastDisplayUpdate);
+      Serial.print(F(", millis() = "));
+      Serial.print(millis());
+      Serial.println();
+
+      lastTick = millis();
+      second++;
+
+      if (second > 59) {
+        second = 0;
+        minute++;
+      }
+      if (minute > 59) {
+        minute = 0;
+        hour++;
+      }
+
+      // hour is kept as 24h internally, changed to 12h for display if militaryTime = false
+      if (hour > 23) { hour = 0; }
+    }
   }
 
   /* If we're in menuPosition == 0 (meaning we're in normal diplay mode)
@@ -360,6 +362,11 @@ void loop() {
     if (!militaryTime) {
       if (displayHour > 12) { displayHour -= 12; }
     }
+    // Even in military time mode, 00:XX is displayed as 12:XX because otherwise
+    // the clock looks broken between 00:00-00:01 as there's nothing to display.
+    // I think the real TIX handles this by not having military time.
+    if (displayHour == 0) { displayHour = 12; }
+
 
     displayDigit((int)(displayHour / 10), hourTensColor, hourTensLEDs, hourTensMax, true);
     displayDigit(((int)(displayHour - ((int)(displayHour / 10) * 10))), hourOnesColor, hourOnesLEDs,
@@ -397,8 +404,11 @@ void loop() {
     if (downButton.clicks > 0) {
       lastMenuAction = millis();
 
-      hour--;
-      if (hour < 0) { hour = 23; }
+      if (hour == 0) {
+        hour = 23;
+      } else {
+        hour--;
+      }
       second = 0;   // Keeps time from updating on us while we're trying to set it
 
       // Reset blink state on button press
@@ -443,16 +453,23 @@ void loop() {
 
       blinkState = false;
       lastBlink  = 0;
+      Serial.print(F("minute = "));
+      Serial.println(minute);
     }
     if (downButton.clicks > 0) {
       lastMenuAction = millis();
 
-      minute -= 10;
-      if (minute < 0) { minute += 60; }
+      if (minute < 10) {
+        minute += 50;
+      } else {
+        minute -= 10;
+      }
       second = 0;   // Keeps time from updating on us while we're trying to set it
 
       blinkState = false;
       lastBlink  = 0;
+      Serial.print(F("minute = "));
+      Serial.println(minute);
     }
 
     if ((millis() - lastBlink) > blinkInterval) {
@@ -494,8 +511,12 @@ void loop() {
     if (downButton.clicks > 0) {
       lastMenuAction = millis();
 
-      minute -= 1;
-      if (minute % 10 == 9) { minute += 10; }
+      if (minute == 0) {
+        minute += 9;
+      } else {
+        minute -= 1;
+        if (minute % 10 == 9) { minute += 10; }
+      }
       second = 0;
 
       blinkState = false;
