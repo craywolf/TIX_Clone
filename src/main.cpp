@@ -221,7 +221,6 @@ void getRTCTime(void);                  // Fetch time from RTC into global vars
 void setRTCTime(void);                  // Update time in RTC from global vars
 void printArray(byte[], byte);          // Send an array to serial.print
 void clearPixels(const byte[], byte);   // Turn off all pixels in an array
-void clearAllPixels(void);              // Clear all pixels
 void displayLogo(void);                 // Display a logo
 void loadEEPROM(void);                  // Load saved values from EEPROM to RAM
 void displayDigit(byte, uint32_t, const byte[], byte, bool);   // Send a digit to the display
@@ -240,7 +239,7 @@ void setup() {
    */
   strip.begin();   // INITIALIZE NeoPixel strip object (REQUIRED)
   // Set all pixels to off
-  clearAllPixels();
+  strip.clear();
   strip.setBrightness(brightness);   // Set BRIGHTNESS (max = 255)
   strip.show();                      // Commit the change
 
@@ -721,10 +720,6 @@ void clearPixels(const byte arr[], byte max) {
   for (byte i = 0; i < max; i++) { strip.setPixelColor(pgm_read_byte(&arr[i]), 0); }
 }
 
-void clearAllPixels(void) {
-  for (byte i = 0; i < strip.numPixels(); i++) { strip.setPixelColor(i, 0); }
-}
-
 /*
  * Print the values in an array to the Serial output
  */
@@ -824,7 +819,7 @@ void loadEEPROM(void) {
 }
 
 void displayLogo(void) {
-  clearAllPixels();
+  strip.clear();
 
   for (byte i = 0; i < pgm_read_byte(&logo_T_size); i++) {
     strip.setPixelColor(pgm_read_byte(&logo_T[i]), hourOnesColor);
@@ -838,6 +833,6 @@ void displayLogo(void) {
   strip.show();
   delay(3000);
 
-  clearAllPixels();
+  strip.clear();
   delay(1000);
 }
