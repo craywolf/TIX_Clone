@@ -228,7 +228,7 @@ void loadEEPROM(void);                  // Load saved values from EEPROM to RAM
 void displayDigit(byte, uint32_t, uint32_t, const byte[], byte, bool);   // Send a digit to the display
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
 
   /*
    * Fetch settings from EEPROM
