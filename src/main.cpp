@@ -675,31 +675,34 @@ void loop() {
  */
 
 void displayDigit(byte digit, uint32_t color, const byte pixelList[], byte max, bool randomize) {
-  /*
-  Serial.print(F("Displaying digit "));
-  Serial.print(digit);
-  Serial.print(F(" on LEDs: "));
-  printArray(pixelList, max);
-  Serial.println();
-  */
-
   // Create an array of digits 0 to max-1.
   byte digitOrder[max];
   for (byte i = 0; i < max; i++) { digitOrder[i] = i; }
 
   // Shuffle that array if we're randomizing the digits
-  if (randomize) {
-    // Serial.println(F("Randomizing digit order"));
-    for (byte i = 0; i < max; i++) {
-      byte r = random(0, max);
-      byte t = digitOrder[r];
 
-      digitOrder[r] = digitOrder[i];
-      digitOrder[i] = t;
+  // If digit is '0' or 'max' we can't possible ensure a change since
+  // they're all on or all off
+  if (digit < max && digit > 0) {
+    while (randomize) {
+      for (byte i = 0; i < max; i++) {
+        byte r = random(0, max);
+        byte t = digitOrder[r];
+
+        digitOrder[r] = digitOrder[i];
+        digitOrder[i] = t;
+      }
+
+      // We don't want a TRUE random, which could result in no change between updates.
+      // We want a fudged random, where (as long as we aren't displaying 0 or max) there
+      // is always a difference from the last time we displayed.
+
+      // Check each digit we're to light up
+      // If any are not lit, we have a change
+      for (byte i = 0; i < digit; i++) {
+        if (strip.getPixelColor(pgm_read_byte(&pixelList[digitOrder[i]])) == 0) { randomize = false; }
+      }
     }
-    // Serial.print(F("New order: "));
-    // printArray(digitOrder, max);
-    // Serial.println();
   }
 
   // Clear this set of digits
