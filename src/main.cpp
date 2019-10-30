@@ -875,5 +875,6 @@ void displayLogo(void) {
   delay(3000);
 
   strip.clear();
-  delay(1000);
+  strip.show();
+  delay(500);
 }
