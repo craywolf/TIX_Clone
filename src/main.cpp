@@ -47,6 +47,13 @@
 RTC_DS3231 rtc;
 
 /*
+ * Software version
+ */
+
+#define VER_MAJ 1
+#define VER_MIN 0
+
+/*
  * Intialize buttons
  */
 
@@ -108,14 +115,8 @@ const static byte PROGMEM minuteTensMax     = 6;
 const static byte PROGMEM minuteOnesLEDs[9] = { 6, 7, 8, 11, 10, 9, 24, 25, 26 };
 const static byte PROGMEM minuteOnesMax     = 9;
 
-const static byte PROGMEM logo_T_size         = 5;
-const static byte PROGMEM logo_T[logo_T_size] = { 1, 3, 15, 19, 21 };
-
-const static byte PROGMEM logo_I_size         = 3;
-const static byte PROGMEM logo_I[logo_I_size] = { 5, 12, 23 };
-
-const static byte PROGMEM logo_X_size         = 5;
-const static byte PROGMEM logo_X[logo_X_size] = { 6, 8, 10, 24, 26 };
+const static byte PROGMEM logo_V_size         = 5;
+const static byte PROGMEM logo_V[logo_V_size] = { 1, 3, 16, 14, 20 };
 
 /*
  * Min, max brightness and interval between
@@ -223,7 +224,7 @@ void setRTCTime(void);                            // Update time in RTC from glo
 void printArray(byte[], byte);                    // Send an array to serial.print
 void clearPixels(const byte[], byte);             // Turn off all pixels in an array
 void clearPixels(const byte[], byte, uint32_t);   // Turn off all pixels in an array
-void displayLogo(void);                           // Display a logo
+void displayVersion(void);                        // Display version
 void loadEEPROM(void);                            // Load saved values from EEPROM to RAM
 void displayDigit(byte, uint32_t, uint32_t, const byte[], byte,
                   bool);     // Send a digit to the display
@@ -299,7 +300,7 @@ void setup() {
    */
   randomSeed(analogRead(0));
 
-  displayLogo();
+  displayVersion();
 
   Serial.println(F("End setup()"));
 }
@@ -994,18 +995,15 @@ void loadEEPROM(void) {
   }
 }
 
-void displayLogo(void) {
+void displayVersion(void) {
   strip.clear();
 
-  for (byte i = 0; i < pgm_read_byte(&logo_T_size); i++) {
-    strip.setPixelColor(pgm_read_byte(&logo_T[i]), hourOnesColor);
+  for (byte i = 0; i < pgm_read_byte(&logo_V_size); i++) {
+    strip.setPixelColor(pgm_read_byte(&logo_V[i]), hourOnesColor);
   }
-  for (byte i = 0; i < pgm_read_byte(&logo_I_size); i++) {
-    strip.setPixelColor(pgm_read_byte(&logo_I[i]), minuteTensColor);
-  }
-  for (byte i = 0; i < pgm_read_byte(&logo_X_size); i++) {
-    strip.setPixelColor(pgm_read_byte(&logo_X[i]), minuteOnesColor);
-  }
+  displayDigit(VER_MAJ, minuteTensColor, 0, minuteTensLEDs, minuteTensMax, false);
+  displayDigit(VER_MIN, minuteOnesColor, 0, minuteOnesLEDs, minuteOnesMax, false);
+
   strip.show();
   delay(3000);
 
