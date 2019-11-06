@@ -279,6 +279,8 @@ void setup() {
 
   if (!rtc.begin()) {
     Serial.println(F("Couldn't find RTC"));
+    strip.fill(clrRed);
+    strip.show();
     while (1) {};
   }
 
@@ -644,7 +646,7 @@ void loop() {
 
     menuPosition      = 0;
     lastDisplayUpdate = 0;
-    
+
     strip.clear();
     strip.show();
   }
