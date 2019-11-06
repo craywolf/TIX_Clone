@@ -367,6 +367,7 @@ void loop() {
     // Hour is always tracked as 24h, updated to 12h for display
     byte displayHour = hour;
     if (displayHour > 12) { displayHour -= 12; }
+    if (displayHour == 0) { displayHour = 12; }
 
     displayDigit((int)(displayHour / 10), hourTensColor, 0, hourTensLEDs, hourTensMax, true);
     displayDigit(((int)(displayHour - ((int)(displayHour / 10) * 10))), hourOnesColor, 0,
@@ -432,6 +433,7 @@ void loop() {
       if (blinkState) {
         byte displayHour = hour;
         if (displayHour > 12) { displayHour -= 12; }
+        if (displayHour == 0) { displayHour = 12; }
 
         displayDigit((int)(displayHour / 10), hourTensColor, clrDimWhite, hourTensLEDs, hourTensMax,
                      false);
