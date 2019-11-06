@@ -30,9 +30,6 @@
  * - Ones-of-hours flashes, " "
  * - Tens-of-minutes flashes, " "
  * - Ones-of-minutes flashes, " ", press 'Down' to save
- *
- * New: Setting 12/24 hour time
- * - Press 'Set' button to toggle
  */
 
 /*
@@ -191,7 +188,6 @@ const unsigned int updateIntervalSlow   = 60000;   // 60 seconds
  * EEPROM is initialized with these values
  */
 
-bool          militaryTime    = false;                  // 12h time if false, 24h time if true
 unsigned long updateInterval  = updateIntervalMedium;   // how many ms between display updates
 uint32_t      hourTensColor   = clrRed;                 // Color of Hour Tens digit
 uint32_t      hourOnesColor   = clrGreen;               // Color of Hour Ones digit
@@ -205,7 +201,6 @@ byte          brightness      = brightnessMin;          // Brightness out of 255
 
 struct ConfigSettings {
   byte          flag;
-  bool          militaryTime;
   unsigned long updateInterval;
   uint32_t      hourTensColor;
   uint32_t      hourOnesColor;
@@ -339,7 +334,7 @@ void loop() {
         hour++;
       }
 
-      // hour is kept as 24h internally, changed to 12h for display if militaryTime = false
+      // hour is kept as 24h internally, changed to 12h for display
       if (hour > 23) { hour = 0; }
     }
   }
@@ -361,13 +356,7 @@ void loop() {
 
     // Hour is always tracked as 24h, updated to 12h for display
     byte displayHour = hour;
-    if (!militaryTime) {
-      if (displayHour > 12) { displayHour -= 12; }
-    }
-    // Even in military time mode, 00:XX is displayed as 12:XX because otherwise
-    // the clock looks broken between 00:00-00:01 as there's nothing to display.
-    // I think the real TIX handles this by not having military time.
-    if (displayHour == 0) { displayHour = 12; }
+    if (displayHour > 12) { displayHour -= 12; }
 
     displayDigit((int)(displayHour / 10), hourTensColor, 0, hourTensLEDs, hourTensMax, true);
     displayDigit(((int)(displayHour - ((int)(displayHour / 10) * 10))), hourOnesColor, 0, hourOnesLEDs,
@@ -430,8 +419,11 @@ void loop() {
                    minuteOnesMax, false);
 
       if (blinkState) {
-        displayDigit((int)(hour / 10), hourTensColor, clrDimWhite, hourTensLEDs, hourTensMax, false);
-        displayDigit(((int)(hour - ((int)(hour / 10) * 10))), hourOnesColor, clrDimWhite, hourOnesLEDs,
+        byte displayHour = hour;
+        if (displayHour > 12) { displayHour -= 12; }
+
+        displayDigit((int)(displayHour / 10), hourTensColor, clrDimWhite, hourTensLEDs, hourTensMax, false);
+        displayDigit(((int)(displayHour - ((int)(displayHour / 10) * 10))), hourOnesColor, clrDimWhite, hourOnesLEDs,
                      hourOnesMax, false);
       } else {
         clearPixels(hourOnesLEDs, hourOnesMax);
@@ -482,9 +474,12 @@ void loop() {
       strip.fill(clrDimWhite);
 
       // Hours digits and minute ones don't blink
-      displayDigit((int)(hour / 10), hourTensColor, clrDimWhite, hourTensLEDs, hourTensMax, false);
-      displayDigit(((int)(hour - ((int)(hour / 10) * 10))), hourOnesColor, clrDimWhite, hourOnesLEDs,
-                   hourOnesMax, false);
+      byte displayHour = hour;
+      if (displayHour > 12) { displayHour -= 12; }
+
+      displayDigit((int)(displayHour / 10), hourTensColor, clrDimWhite, hourTensLEDs, hourTensMax, false);
+      displayDigit(((int)(displayHour - ((int)(displayHour / 10) * 10))), hourOnesColor, clrDimWhite, hourOnesLEDs,
+                    hourOnesMax, false);
       displayDigit(((int)(minute - ((int)(minute / 10) * 10))), minuteOnesColor, clrDimWhite, minuteOnesLEDs,
                    minuteOnesMax, false);
 
@@ -539,9 +534,12 @@ void loop() {
       strip.fill(clrDimWhite);
 
       // Hours digits and minute tens don't blink
-      displayDigit((int)(hour / 10), hourTensColor, clrDimWhite, hourTensLEDs, hourTensMax, false);
-      displayDigit(((int)(hour - ((int)(hour / 10) * 10))), hourOnesColor, clrDimWhite, hourOnesLEDs,
-                   hourOnesMax, false);
+      byte displayHour = hour;
+      if (displayHour > 12) { displayHour -= 12; }
+
+      displayDigit((int)(displayHour / 10), hourTensColor, clrDimWhite, hourTensLEDs, hourTensMax, false);
+      displayDigit(((int)(displayHour - ((int)(displayHour / 10) * 10))), hourOnesColor, clrDimWhite, hourOnesLEDs,
+                    hourOnesMax, false);
       displayDigit((int)(minute / 10), minuteTensColor, clrDimWhite, minuteTensLEDs, minuteTensMax, false);
 
       if (blinkState) {
@@ -645,28 +643,6 @@ void loop() {
       lastMenuAction = millis();
       Serial.print(F("Entering menu: "));
       Serial.println(menuPosition);
-    }
-    // If we're not in a menu, pressing this switches between 12/24h time
-    else {
-      militaryTime          = !militaryTime;
-      settings.militaryTime = militaryTime;
-      EEPROM.put(0, settings);
-
-      strip.clear();
-
-      if (militaryTime) {
-        displayDigit(2, clrWhite, 0, hourTensLEDs, hourTensMax, false);
-        displayDigit(4, clrWhite, 0, hourOnesLEDs, hourOnesMax, false);
-      } else {
-        displayDigit(1, clrWhite, 0, hourTensLEDs, hourTensMax, false);
-        displayDigit(2, clrWhite, 0, hourOnesLEDs, hourOnesMax, false);
-      }
-
-      strip.show();
-      delay(1000);
-
-      // Update display immediately
-      lastDisplayUpdate = 0;
     }
   }
 
@@ -857,7 +833,6 @@ void loadEEPROM(void) {
     Serial.println(F("Saving default config data"));
 
     settings.flag            = flag;
-    settings.militaryTime    = militaryTime;
     settings.updateInterval  = updateInterval;
     settings.hourTensColor   = hourTensColor;
     settings.hourOnesColor   = hourOnesColor;
@@ -867,15 +842,12 @@ void loadEEPROM(void) {
 
     EEPROM.put(0, settings);
   } else {
-    militaryTime   = settings.militaryTime;
     updateInterval = settings.updateInterval;
     brightness     = settings.brightness;
     if (brightness > brightnessMax || brightness < brightnessMin) { brightness = brightnessMin; }
     strip.setBrightness(brightness);
 
     Serial.println(F("Loaded settings from EEPROM:"));
-    Serial.print(F("- militaryTime = "));
-    Serial.println(militaryTime, BIN);
     Serial.print(F("- updateInterval = "));
     Serial.println(updateInterval);
     Serial.print(F("- brightness = "));
