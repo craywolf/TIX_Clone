@@ -213,14 +213,15 @@ ConfigSettings settings;
 /*
  * Function Declarations
  */
-void getRTCTime(void);                  // Fetch time from RTC into global vars
-void setRTCTime(void);                  // Update time in RTC from global vars
-void printArray(byte[], byte);          // Send an array to serial.print
-void clearPixels(const byte[], byte);   // Turn off all pixels in an array
+void getRTCTime(void);                            // Fetch time from RTC into global vars
+void setRTCTime(void);                            // Update time in RTC from global vars
+void printArray(byte[], byte);                    // Send an array to serial.print
+void clearPixels(const byte[], byte);             // Turn off all pixels in an array
 void clearPixels(const byte[], byte, uint32_t);   // Turn off all pixels in an array
-void displayLogo(void);                 // Display a logo
-void loadEEPROM(void);                  // Load saved values from EEPROM to RAM
-void displayDigit(byte, uint32_t, uint32_t, const byte[], byte, bool);   // Send a digit to the display
+void displayLogo(void);                           // Display a logo
+void loadEEPROM(void);                            // Load saved values from EEPROM to RAM
+void displayDigit(byte, uint32_t, uint32_t, const byte[], byte,
+                  bool);   // Send a digit to the display
 
 void setup() {
   Serial.begin(115200);
@@ -359,8 +360,8 @@ void loop() {
     if (displayHour > 12) { displayHour -= 12; }
 
     displayDigit((int)(displayHour / 10), hourTensColor, 0, hourTensLEDs, hourTensMax, true);
-    displayDigit(((int)(displayHour - ((int)(displayHour / 10) * 10))), hourOnesColor, 0, hourOnesLEDs,
-                 hourOnesMax, true);
+    displayDigit(((int)(displayHour - ((int)(displayHour / 10) * 10))), hourOnesColor, 0,
+                 hourOnesLEDs, hourOnesMax, true);
     displayDigit((int)(minute / 10), minuteTensColor, 0, minuteTensLEDs, minuteTensMax, true);
     displayDigit(((int)(minute - ((int)(minute / 10) * 10))), minuteOnesColor, 0, minuteOnesLEDs,
                  minuteOnesMax, true);
@@ -414,17 +415,19 @@ void loop() {
       strip.fill(clrDimWhite);
 
       // Minutes digits don't blink
-      displayDigit((int)(minute / 10), minuteTensColor, clrDimWhite, minuteTensLEDs, minuteTensMax, false);
-      displayDigit(((int)(minute - ((int)(minute / 10) * 10))), minuteOnesColor, clrDimWhite, minuteOnesLEDs,
-                   minuteOnesMax, false);
+      displayDigit((int)(minute / 10), minuteTensColor, clrDimWhite, minuteTensLEDs, minuteTensMax,
+                   false);
+      displayDigit(((int)(minute - ((int)(minute / 10) * 10))), minuteOnesColor, clrDimWhite,
+                   minuteOnesLEDs, minuteOnesMax, false);
 
       if (blinkState) {
         byte displayHour = hour;
         if (displayHour > 12) { displayHour -= 12; }
 
-        displayDigit((int)(displayHour / 10), hourTensColor, clrDimWhite, hourTensLEDs, hourTensMax, false);
-        displayDigit(((int)(displayHour - ((int)(displayHour / 10) * 10))), hourOnesColor, clrDimWhite, hourOnesLEDs,
-                     hourOnesMax, false);
+        displayDigit((int)(displayHour / 10), hourTensColor, clrDimWhite, hourTensLEDs, hourTensMax,
+                     false);
+        displayDigit(((int)(displayHour - ((int)(displayHour / 10) * 10))), hourOnesColor,
+                     clrDimWhite, hourOnesLEDs, hourOnesMax, false);
       } else {
         clearPixels(hourOnesLEDs, hourOnesMax);
         clearPixels(hourTensLEDs, hourTensMax);
@@ -477,17 +480,20 @@ void loop() {
       byte displayHour = hour;
       if (displayHour > 12) { displayHour -= 12; }
 
-      displayDigit((int)(displayHour / 10), hourTensColor, clrDimWhite, hourTensLEDs, hourTensMax, false);
-      displayDigit(((int)(displayHour - ((int)(displayHour / 10) * 10))), hourOnesColor, clrDimWhite, hourOnesLEDs,
-                    hourOnesMax, false);
-      displayDigit(((int)(minute - ((int)(minute / 10) * 10))), minuteOnesColor, clrDimWhite, minuteOnesLEDs,
-                   minuteOnesMax, false);
+      displayDigit((int)(displayHour / 10), hourTensColor, clrDimWhite, hourTensLEDs, hourTensMax,
+                   false);
+      displayDigit(((int)(displayHour - ((int)(displayHour / 10) * 10))), hourOnesColor,
+                   clrDimWhite, hourOnesLEDs, hourOnesMax, false);
+      displayDigit(((int)(minute - ((int)(minute / 10) * 10))), minuteOnesColor, clrDimWhite,
+                   minuteOnesLEDs, minuteOnesMax, false);
 
       if (blinkState) {
         if ((int)(minute / 10) == 0) {
-          displayDigit(minuteTensMax, clrDimWhite, clrDimWhite, minuteTensLEDs, minuteTensMax, false);
+          displayDigit(minuteTensMax, clrDimWhite, clrDimWhite, minuteTensLEDs, minuteTensMax,
+                       false);
         } else {
-          displayDigit((int)(minute / 10), minuteTensColor, clrDimWhite, minuteTensLEDs, minuteTensMax, false);
+          displayDigit((int)(minute / 10), minuteTensColor, clrDimWhite, minuteTensLEDs,
+                       minuteTensMax, false);
         }
       } else {
         clearPixels(minuteTensLEDs, minuteTensMax);
@@ -537,17 +543,21 @@ void loop() {
       byte displayHour = hour;
       if (displayHour > 12) { displayHour -= 12; }
 
-      displayDigit((int)(displayHour / 10), hourTensColor, clrDimWhite, hourTensLEDs, hourTensMax, false);
-      displayDigit(((int)(displayHour - ((int)(displayHour / 10) * 10))), hourOnesColor, clrDimWhite, hourOnesLEDs,
-                    hourOnesMax, false);
-      displayDigit((int)(minute / 10), minuteTensColor, clrDimWhite, minuteTensLEDs, minuteTensMax, false);
+      displayDigit((int)(displayHour / 10), hourTensColor, clrDimWhite, hourTensLEDs, hourTensMax,
+                   false);
+      displayDigit(((int)(displayHour - ((int)(displayHour / 10) * 10))), hourOnesColor,
+                   clrDimWhite, hourOnesLEDs, hourOnesMax, false);
+      displayDigit((int)(minute / 10), minuteTensColor, clrDimWhite, minuteTensLEDs, minuteTensMax,
+                   false);
 
       if (blinkState) {
         // Instead of being blank for 0, blink all white
         if ((int)(minute % 10) == 0) {
-          displayDigit(minuteOnesMax, clrDimWhite, clrDimWhite, minuteOnesLEDs, minuteOnesMax, false);
+          displayDigit(minuteOnesMax, clrDimWhite, clrDimWhite, minuteOnesLEDs, minuteOnesMax,
+                       false);
         } else {
-          displayDigit((int)(minute % 10), minuteOnesColor, clrDimWhite, minuteOnesLEDs, minuteOnesMax, false);
+          displayDigit((int)(minute % 10), minuteOnesColor, clrDimWhite, minuteOnesLEDs,
+                       minuteOnesMax, false);
         }
       } else {
         clearPixels(minuteOnesLEDs, minuteOnesMax);
@@ -706,7 +716,8 @@ void loop() {
  * randomize - use a random order, or the pixelList array-defined order
  */
 
-void displayDigit(byte digit, uint32_t color, uint32_t bgcolor, const byte pixelList[], byte max, bool randomize) {
+void displayDigit(byte digit, uint32_t color, uint32_t bgcolor, const byte pixelList[], byte max,
+                  bool randomize) {
   // Create an array of digits 0 to max-1.
   byte digitOrder[max];
   for (byte i = 0; i < max; i++) { digitOrder[i] = i; }
@@ -753,9 +764,7 @@ void displayDigit(byte digit, uint32_t color, uint32_t bgcolor, const byte pixel
  * Set all pixels in arr to off (black) or an optional passed color
  */
 
-void clearPixels(const byte arr[], byte max) {
-  clearPixels(arr, max, 0);
-}
+void clearPixels(const byte arr[], byte max) { clearPixels(arr, max, 0); }
 
 void clearPixels(const byte arr[], byte max, uint32_t color) {
   for (byte i = 0; i < max; i++) { strip.setPixelColor(pgm_read_byte(&arr[i]), color); }
