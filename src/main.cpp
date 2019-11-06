@@ -121,7 +121,7 @@ const static byte PROGMEM logo_X[logo_X_size] = { 6, 8, 10, 24, 26 };
  * Min, max brightness and interval between
  */
 
-byte brightnessMax  = 200;
+byte brightnessMax  = 250;
 byte brightnessMin  = 50;
 byte brightnessStep = 50;
 
