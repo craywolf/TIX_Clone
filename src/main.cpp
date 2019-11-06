@@ -155,9 +155,12 @@ unsigned long lastDisplayUpdate = 0;        // Last time we updated the pixel di
 // 4 = Save settings and resume clock
 // 5 = Set update interval
 // 6 = Save update interval
+// 7 = Set color scheme
+// 8 = Save color scheme
 byte          menuPosition   = 0;
-byte          menuSaveTime   = 4;       // Menu position where time gets saved to RTC
-byte          menuMax        = 6;       // Max menu position
+byte          menuSaveTime   = 4;   // Menu position where time gets saved to RTC
+byte          menuSaveColor  = 8;
+byte          menuMax        = 8;       // Max menu position
 unsigned long lastMenuAction = 0;       // Time of last button press in menu
 unsigned long menuTimeout    = 20000;   // Menu timeout (no input)
 
@@ -171,7 +174,7 @@ const uint32_t clrBlue     = strip.Color(0, 0, 255);
 const uint32_t clrPurple   = strip.Color(0, 139, 139);
 const uint32_t clrWhite    = strip.Color(255, 255, 255);
 const uint32_t clrDimWhite = strip.Color(50, 50, 50);
-// const uint32_t clrYellow = strip.Color(255, 255, 0);
+const uint32_t clrYellow   = strip.Color(255, 255, 0);
 
 /*
  * Update interval options
@@ -194,6 +197,7 @@ uint32_t      hourOnesColor   = clrGreen;               // Color of Hour Ones di
 uint32_t      minuteTensColor = clrBlue;                // Color of Minutes Tens digit
 uint32_t      minuteOnesColor = clrPurple;              // Color of Minutes Ones digit
 byte          brightness      = brightnessMin;          // Brightness out of 255
+byte          colorScheme     = 0;                      // Pre-set color schemes
 
 /*
  * Vars for storing settings in EEPROM
@@ -207,6 +211,7 @@ struct ConfigSettings {
   uint32_t      minuteTensColor;
   uint32_t      minuteOnesColor;
   byte          brightness;
+  byte          colorScheme;
 };
 ConfigSettings settings;
 
@@ -221,7 +226,8 @@ void clearPixels(const byte[], byte, uint32_t);   // Turn off all pixels in an a
 void displayLogo(void);                           // Display a logo
 void loadEEPROM(void);                            // Load saved values from EEPROM to RAM
 void displayDigit(byte, uint32_t, uint32_t, const byte[], byte,
-                  bool);   // Send a digit to the display
+                  bool);     // Send a digit to the display
+void setColorScheme(void);   // Choose a pre-set color scheme
 
 void setup() {
   Serial.begin(115200);
@@ -638,6 +644,53 @@ void loop() {
 
     menuPosition      = 0;
     lastDisplayUpdate = 0;
+    
+    strip.clear();
+    strip.show();
+  }
+
+  // Color scheme chooser
+  if (menuPosition == 7) {
+    if (millis() - lastMenuAction > menuTimeout) { menuPosition = menuSaveColor; }
+
+    if (downButton.clicks > 0) {
+      colorScheme++;
+      setColorScheme();
+
+      lastBlink      = 0;
+      lastMenuAction = millis();
+    }
+
+    if ((millis() - lastBlink) > blinkInterval) {
+      lastBlink  = millis();
+      blinkState = !blinkState;
+
+      if (blinkState) {
+        displayDigit(hourTensMax, hourTensColor, 0, hourTensLEDs, hourTensMax, false);
+        displayDigit(hourOnesMax, hourOnesColor, 0, hourOnesLEDs, hourOnesMax, false);
+        displayDigit(minuteTensMax, minuteTensColor, 0, minuteTensLEDs, minuteTensMax, false);
+        displayDigit(minuteOnesMax, minuteOnesColor, 0, minuteOnesLEDs, minuteOnesMax, false);
+      } else {
+        strip.clear();
+      }
+
+      strip.show();
+    }
+  }
+
+  // Save color scheme - non-interactive
+  if (menuPosition == menuSaveColor) {
+    Serial.print(F("Setting colorScheme = "));
+    Serial.println(colorScheme);
+
+    settings.colorScheme = colorScheme;
+    EEPROM.put(0, settings);
+
+    menuPosition      = 0;
+    lastDisplayUpdate = 0;
+
+    strip.clear();
+    strip.show();
   }
 
   /*
@@ -701,6 +754,20 @@ void loop() {
     // Inside the update interval chooser, a long press saves and exits
     else if (menuPosition == 5) {
       menuPosition++;
+    }
+  }
+
+  // Down button - long click
+  // Enter color scheme chooser
+  if (downButton.clicks < 0) {
+    if (menuPosition == 0) {
+      clearPixels(hourTensLEDs, hourTensMax);
+      clearPixels(hourOnesLEDs, hourOnesMax);
+      clearPixels(minuteTensLEDs, minuteTensMax);
+      clearPixels(minuteOnesLEDs, minuteOnesMax);
+      lastMenuAction = millis();
+      lastBlink      = millis() - blinkInterval;
+      menuPosition   = 7;
     }
   }
 }
@@ -824,6 +891,60 @@ void setRTCTime() {
   }
 }
 
+void setColorScheme(void) {
+  if (Serial) {
+    Serial.print(F("setting color scheme "));
+    Serial.println(colorScheme);
+  }
+
+  switch (colorScheme) {
+    default:
+      colorScheme = 0;
+    case 0:   // My personal default
+      hourTensColor   = clrRed;
+      hourOnesColor   = clrGreen;
+      minuteTensColor = clrBlue;
+      minuteOnesColor = clrPurple;
+      break;
+    case 1:   // TIX II
+      hourTensColor   = clrBlue;
+      hourOnesColor   = clrYellow;
+      minuteTensColor = clrPurple;
+      minuteOnesColor = clrGreen;
+      break;
+    case 2:                                          // Green/yellow
+      hourTensColor   = strip.Color(175, 13, 186);   // blue-green
+      hourOnesColor   = clrGreen;
+      minuteTensColor = strip.Color(255, 154, 50);
+      minuteOnesColor = clrYellow;
+      break;
+    case 3:   // Red/orange
+      hourTensColor   = clrRed;
+      hourOnesColor   = strip.Color(69, 255, 0);
+      minuteTensColor = strip.Color(140, 255, 0);
+      minuteOnesColor = clrYellow;   // strip.Color(174, 255, 66);
+      break;
+    case 4:   // Purple/blue
+      hourTensColor   = strip.Color(13, 129, 112);
+      hourOnesColor   = clrPurple;
+      minuteTensColor = strip.Color(46, 23, 124);
+      minuteOnesColor = clrBlue;
+      break;
+    case 5:   // Christmas
+      hourTensColor   = clrRed;
+      hourOnesColor   = clrGreen;
+      minuteTensColor = clrRed;
+      minuteOnesColor = clrGreen;
+      break;
+    case 6:   // Hanukkah
+      hourTensColor   = clrWhite;
+      hourOnesColor   = clrBlue;
+      minuteTensColor = clrWhite;
+      minuteOnesColor = clrBlue;
+      break;
+  }
+}
+
 void loadEEPROM(void) {
   EEPROM.get(0, settings);
 
@@ -832,7 +953,7 @@ void loadEEPROM(void) {
   // time running on this chip, or the data is corrupt.
   //
   // update flag by adding 1 if changing struct, so we don't load bad data.
-  const byte flag = B10110010;
+  const byte flag = B10110011;
 
   if (settings.flag != flag) {
     Serial.print(F("EEPROM flag invalid! Expected "));
@@ -848,6 +969,7 @@ void loadEEPROM(void) {
     settings.minuteTensColor = minuteTensColor;
     settings.minuteOnesColor = minuteOnesColor;
     settings.brightness      = brightness;
+    settings.colorScheme     = colorScheme;
 
     EEPROM.put(0, settings);
   } else {
@@ -856,11 +978,17 @@ void loadEEPROM(void) {
     if (brightness > brightnessMax || brightness < brightnessMin) { brightness = brightnessMin; }
     strip.setBrightness(brightness);
 
+    colorScheme = settings.colorScheme;
+    setColorScheme();
+
     Serial.println(F("Loaded settings from EEPROM:"));
     Serial.print(F("- updateInterval = "));
     Serial.println(updateInterval);
     Serial.print(F("- brightness = "));
     Serial.println(brightness);
+    Serial.print(F("- colorScheme = "));
+    Serial.print(colorScheme);
+    Serial.println();
   }
 }
 
