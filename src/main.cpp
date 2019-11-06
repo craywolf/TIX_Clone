@@ -929,9 +929,9 @@ void setColorScheme(void) {
       break;
     case 4:   // Purple/blue
       hourTensColor   = strip.Color(13, 129, 112);
-      hourOnesColor   = clrPurple;
+      hourOnesColor   = strip.Color(29, 73, 118); //clrPurple; // strip.Color(0, 139, 139);
       minuteTensColor = strip.Color(46, 23, 124);
-      minuteOnesColor = clrBlue;
+      minuteOnesColor = strip.Color(175, 13, 186); //clrBlue;
       break;
     case 5:   // Christmas
       hourTensColor   = clrRed;
