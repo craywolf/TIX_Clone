@@ -668,7 +668,7 @@ void loop() {
 
     if ((millis() - lastBlink) > blinkInterval) {
       lastBlink  = millis();
-      blinkState = !blinkState;
+      blinkState = true; // don't blink the color chooser
 
       if (blinkState) {
         displayDigit(hourTensMax, hourTensColor, 0, hourTensLEDs, hourTensMax, false);
