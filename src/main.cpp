@@ -728,7 +728,7 @@ void loop() {
     // (Inside menus it's handled by that code)
     if (menuPosition == 0) {
       brightness += brightnessStep;
-      if (brightness > brightnessMax) { brightness = brightnessMin; }
+      if ((brightness > brightnessMax) || (brightness < brightnessMin)) { brightness = brightnessMin; }
 
       strip.setBrightness(brightness);
       strip.show();   // Update brightness immediately
