@@ -75,7 +75,7 @@ ClickButton downButton(BTN_DOWN, LOW, CLICKBTN_PULLUP);
 #define LED_COUNT 27
 
 // Declare our NeoPixel strip object:
-Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_RGB + NEO_KHZ800);
 // Argument 1 = Number of pixels in NeoPixel strip
 // Argument 2 = Arduino pin number (most are valid)
 // Argument 3 = Pixel type flags, add together as needed:
@@ -167,10 +167,10 @@ unsigned long menuTimeout    = 20000;   // Menu timeout (no input)
  * Predefined colors
  */
 
-const uint32_t clrRed      = strip.Color(0, 255, 0);
-const uint32_t clrGreen    = strip.Color(255, 0, 0);
+const uint32_t clrRed      = strip.Color(255, 0, 0);
+const uint32_t clrGreen    = strip.Color(0, 255, 0);
 const uint32_t clrBlue     = strip.Color(0, 0, 255);
-const uint32_t clrPurple   = strip.Color(0, 139, 139);
+const uint32_t clrPurple   = strip.Color(139, 0, 139);
 const uint32_t clrWhite    = strip.Color(255, 255, 255);
 const uint32_t clrDimWhite = strip.Color(50, 50, 50);
 const uint32_t clrYellow   = strip.Color(255, 255, 0);
@@ -916,22 +916,22 @@ void setColorScheme(void) {
       minuteOnesColor = clrGreen;
       break;
     case 2:                                          // Green/yellow
-      hourTensColor   = strip.Color(175, 13, 186);   // blue-green
+      hourTensColor   = strip.Color(13, 175, 186);   // blue-green
       hourOnesColor   = clrGreen;
-      minuteTensColor = strip.Color(255, 154, 50);
+      minuteTensColor = strip.Color(154, 154, 50);
       minuteOnesColor = clrYellow;
       break;
     case 3:   // Red/orange
       hourTensColor   = clrRed;
-      hourOnesColor   = strip.Color(69, 255, 0);
-      minuteTensColor = strip.Color(140, 255, 0);
-      minuteOnesColor = clrYellow;   // strip.Color(174, 255, 66);
+      hourOnesColor   = strip.Color(255, 69, 0);
+      minuteTensColor = strip.Color(255, 140, 0);
+      minuteOnesColor = clrYellow;   // strip.Color(255, 174, 66);
       break;
     case 4:   // Purple/blue
-      hourTensColor   = strip.Color(13, 129, 112);
-      hourOnesColor   = strip.Color(29, 73, 118); //clrPurple; // strip.Color(0, 139, 139);
-      minuteTensColor = strip.Color(46, 23, 124);
-      minuteOnesColor = strip.Color(175, 13, 186); //clrBlue;
+      hourTensColor   = strip.Color(129, 13, 112);
+      hourOnesColor   = strip.Color(73, 29, 118); //clrPurple; // strip.Color(139, 0, 139);
+      minuteTensColor = strip.Color(23, 46, 124);
+      minuteOnesColor = strip.Color(13, 175, 186); //clrBlue;
       break;
     case 5:   // Christmas
       hourTensColor   = clrRed;
