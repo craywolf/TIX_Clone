@@ -49,7 +49,7 @@ RTC_DS3231 rtc;
  */
 
 #define VER_MAJ 1
-#define VER_MIN 0
+#define VER_MIN 1
 
 /*
  * Intialize buttons
