@@ -10,30 +10,39 @@
 #define BOARDV1
 
 /*
- * Official TIX menu functions:
+ * TIX Clone menu functions:
  *
- * Hold 'Set' to set time (in original it was a short press)
+ * Setting time:
+ * - Hold 'Set' for 2 seconds
  * - Left 2 indicators flash. Use up/down to set from 1 to 12.
  * - Press again, tens-of-minutes flash. Up/down to set from 1-5.
  * - Press again, ones-of-minutes flash. Up/down to set from 1-9.
  * - Press again, all digits flash, then resume clock mode.
  *
  * Changing brightness:
- * - In normal mode, press 'Up' to cycle through brightness levels.
+ * - When clock is displaying time, press 'Up' to cycle through brightness levels.
  *
  * Setting update rate:
- * - Hold 'Up' for 2 seconds (in original this was 'Set'). All indicators go out except one of
- *   the left-most LEDs. Press 'Up' to cycle through rates.
- * - Top LED lit = 1s
- * - Middle LED  = 4s (default)
- * - Bottom LED  = 1m
+ * - Hold 'Up' for 2 seconds. All indicators go out except one of the left-most
+ *   LEDs.
+ * - Press 'Up' to cycle through rates.
+ *   - Top LED lit = 1s
+ *   - Middle LED  = 4s (default)
+ *   - Bottom LED  = 1m
  * - Press 'Set' or long press 'Up' to return
  *
- * New: Setting color pattern
- * - Hold 'Down' for 2 seconds (in original this did nothing)
+ * Setting color pattern
+ * - Hold 'Down' for 2 seconds
  * - Press Down to cycle through color options
  * - Press 'Set' to save
  */
+
+/*
+ * Software version
+ */
+
+#define VER_MAJ 2
+#define VER_MIN 0
 
 /*
  *
@@ -42,6 +51,8 @@
  */
 
 // Set up pin assignments and other details per board version
+// Hardware version 1.x uses a DS3231-based external module.
+// Version 2.x uses a DS1307+ integrated in the board.
 
 #ifdef BOARDV1
   #define LED_PIN 6
@@ -57,13 +68,9 @@
   #define DS1307
 #endif
 
-
 /*
  * Initialize RTC
  */
-
-// Hardware version 1.x uses a DS3231-based external module.
-// Version 2.x uses a DS1307+ integrated in the board.
 
 #if defined DS3231
   RTC_DS3231 rtc;
@@ -75,16 +82,15 @@
  * Intialize buttons
  */
 
-
 ClickButton setButton(BTN_SET, LOW, CLICKBTN_PULLUP);
 ClickButton upButton(BTN_UP, LOW, CLICKBTN_PULLUP);
 ClickButton downButton(BTN_DOWN, LOW, CLICKBTN_PULLUP);
 
 /*
- * Intialize NeoPixels
+ * Intialize WS2811 / WS2812 LEDs
  */
 
-// How many NeoPixels are attached to the Arduino?
+// How many LEDs are attached?
 #define LED_COUNT 27
 
 // Declare our NeoPixel strip object.
@@ -99,17 +105,10 @@ Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_RGB + NEO_KHZ800);
  */
 
 /*
- * Software version
- */
-
-#define VER_MAJ 2
-#define VER_MIN 0
-
-/*
  * Define which pixels are for each digit
  */
 
-// The LEDs are laid out to be compatible with using sections of LED strip:
+// The LEDs are laid out as if using sections of LED strip:
 //
 // HourTens             HourOnes              MinuteTens             MinuteOnes
 //     0      ---     1 --  2 --  3    ---      4 --  5    ---     6 --   7 -- 8
@@ -131,7 +130,7 @@ const static byte PROGMEM logo_V_size         = 5;
 const static byte PROGMEM logo_V[logo_V_size] = { 1, 3, 16, 14, 20 };
 
 /*
- * Min, max brightness and interval between
+ * Min/max brightness and interval between
  */
 
 byte brightnessMax  = 250;
@@ -200,8 +199,9 @@ const unsigned int updateIntervalSlow   = 60000;   // 60 seconds
 /*
  * Default values for preferences
  *
- * Will be overwritten by EEPROM settings if found, otherwise
- * EEPROM is initialized with these values
+ * EEPROM will be initialized with these values if no saved
+ * data is found. If saved data exists, these values will be
+ * read from EEPROM and stored in these variables.
  */
 
 unsigned long updateInterval  = updateIntervalMedium;   // how many ms between display updates
@@ -252,11 +252,10 @@ void setup() {
   loadEEPROM();
 
   /*
-   * Init NeoPixel strip
+   * Init LEDs
    */
   strip.begin();   // INITIALIZE NeoPixel strip object (REQUIRED)
-  // Set all pixels to off
-  strip.clear();
+  strip.clear();   // Set all pixels to off
   strip.setBrightness(brightness);   // Set BRIGHTNESS (max = 255)
   strip.show();                      // Commit the change
 
@@ -287,7 +286,7 @@ void setup() {
   downButton.longClickTime  = LONG_CLICK;
 
   /*
-   * Initialize the RTC
+   * Init RTC
    */
 
   if (!rtc.begin()) {
@@ -312,12 +311,15 @@ void setup() {
   getRTCTime();
 
   /*
-   * Initialize the RNG with input from a disconnected pin
+   * Init RNG with input from a disconnected pin
    *
    * Hopefully that introduces some actual randomness
    */
   randomSeed(analogRead(0));
 
+  /*
+   * Show software version on clock display
+   */
   displayVersion();
 
   Serial.println(F("End setup()"));
