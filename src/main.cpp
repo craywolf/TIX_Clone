@@ -263,12 +263,6 @@ void setup() {
    * Init buttons
    */
 
-  // Not sure if the pinMode() calls are needed with ClickButton
-  // but it can't hurt
-  pinMode(BTN_UP, INPUT_PULLUP);
-  pinMode(BTN_DOWN, INPUT_PULLUP);
-  pinMode(BTN_SET, INPUT_PULLUP);
-
   const int DEBOUNCE    = 30;     // ms to wait for debouncing
   const int MULTI_CLICK = 50;     // how long must pass between multiple clicks
   const int LONG_CLICK  = 1000;   // length of a long press
