@@ -4,6 +4,11 @@
 #include <EEPROM.h>
 #include <RTClib.h>
 
+// Uncomment for board version 1.X support
+// Defaults to board version 2.X
+// Version is silkscreened on lower-right corner of PCB
+#define BOARDV1
+
 /*
  * Official TIX menu functions:
  *
@@ -36,28 +41,40 @@
  *
  */
 
+// Set up pin assignments and other details per board version
+
+#ifdef BOARDV1
+  #define LED_PIN 6
+  #define BTN_UP 7
+  #define BTN_DOWN 8
+  #define BTN_SET 9
+  #define DS3231
+#else
+  #define LED_PIN 9
+  #define BTN_UP 6
+  #define BTN_DOWN 7
+  #define BTN_SET 8
+  #define DS1307
+#endif
+
+
 /*
  * Initialize RTC
  */
 
-// Using a ChronoDot from Adafruit - DS3231 based
-// Besides power, connect SDA to A4, and SCL to A5
-RTC_DS3231 rtc;
+// Hardware version 1.x uses a DS3231-based external module.
+// Version 2.x uses a DS1307+ integrated in the board.
 
-/*
- * Software version
- */
-
-#define VER_MAJ 1
-#define VER_MIN 1
+#if defined DS3231
+  RTC_DS3231 rtc;
+#elif defined DS1307
+  RTC_DS1307 rtc;
+#endif
 
 /*
  * Intialize buttons
  */
 
-#define BTN_UP 7
-#define BTN_DOWN 8
-#define BTN_SET 9
 
 ClickButton setButton(BTN_SET, LOW, CLICKBTN_PULLUP);
 ClickButton upButton(BTN_UP, LOW, CLICKBTN_PULLUP);
@@ -67,29 +84,26 @@ ClickButton downButton(BTN_DOWN, LOW, CLICKBTN_PULLUP);
  * Intialize NeoPixels
  */
 
-// Which pin on the Arduino is connected to the NeoPixels?
-// On a Trinket or Gemma we suggest changing this to 1:
-#define LED_PIN 6
-
 // How many NeoPixels are attached to the Arduino?
 #define LED_COUNT 27
 
-// Declare our NeoPixel strip object:
+// Declare our NeoPixel strip object.
+// If Red and Green come out reversed, change NEO_RGB to NEO_GRB.
+// If you're using LEDs with a separate White component, use NEO_RGBW.
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_RGB + NEO_KHZ800);
-// Argument 1 = Number of pixels in NeoPixel strip
-// Argument 2 = Arduino pin number (most are valid)
-// Argument 3 = Pixel type flags, add together as needed:
-//   NEO_KHZ800  800 KHz bitstream (most NeoPixel products w/WS2812 LEDs)
-//   NEO_KHZ400  400 KHz (classic 'v1' (not v2) FLORA pixels, WS2811 drivers)
-//   NEO_GRB     Pixels are wired for GRB bitstream (most NeoPixel products)
-//   NEO_RGB     Pixels are wired for RGB bitstream (v1 FLORA pixels, not v2)
-//   NEO_RGBW    Pixels are wired for RGBW bitstream (NeoPixel RGBW products)
 
 /*
  *
  * Global variables
  *
  */
+
+/*
+ * Software version
+ */
+
+#define VER_MAJ 2
+#define VER_MIN 0
 
 /*
  * Define which pixels are for each digit
@@ -283,11 +297,17 @@ void setup() {
     while (1) {};
   }
 
-  if (rtc.lostPower()) {
-    Serial.println(F("RTC lost power, setting time to default"));
-    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-  }
-  // rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  #if defined DS3231
+    if (rtc.lostPower()) {
+      Serial.println(F("RTC lost power, setting time to default"));
+      rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+    }
+  #elif defined DS1307
+    if (! rtc.isrunning()) {
+      Serial.println(F("RTC lost power, setting time to default"));
+      rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+    }
+  #endif
 
   getRTCTime();
 
