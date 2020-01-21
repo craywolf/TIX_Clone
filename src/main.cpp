@@ -55,27 +55,27 @@
 // Version 2.x uses a DS1307+ integrated in the board.
 
 #ifdef BOARDV1
-  #define LED_PIN 6
-  #define BTN_UP 7
-  #define BTN_DOWN 8
-  #define BTN_SET 9
-  #define DS3231
+#define LED_PIN 6
+#define BTN_UP 7
+#define BTN_DOWN 8
+#define BTN_SET 9
+#define DS3231
 #else
-  #define LED_PIN 9
-  #define BTN_UP 6
-  #define BTN_DOWN 7
-  #define BTN_SET 8
-  #define DS1307
+#define LED_PIN 9
+#define BTN_UP 6
+#define BTN_DOWN 7
+#define BTN_SET 8
+#define DS1307
 #endif
 
 /*
  * Initialize RTC
  */
 
-#if defined DS3231
-  RTC_DS3231 rtc;
+#if defined   DS3231
+RTC_DS3231    rtc;
 #elif defined DS1307
-  RTC_DS1307 rtc;
+RTC_DS1307 rtc;
 #endif
 
 /*
@@ -254,8 +254,8 @@ void setup() {
   /*
    * Init LEDs
    */
-  strip.begin();   // INITIALIZE NeoPixel strip object (REQUIRED)
-  strip.clear();   // Set all pixels to off
+  strip.begin();                     // INITIALIZE NeoPixel strip object (REQUIRED)
+  strip.clear();                     // Set all pixels to off
   strip.setBrightness(brightness);   // Set BRIGHTNESS (max = 255)
   strip.show();                      // Commit the change
 
@@ -290,17 +290,17 @@ void setup() {
     while (1) {};
   }
 
-  #if defined DS3231
-    if (rtc.lostPower()) {
-      Serial.println(F("RTC lost power, setting time to default"));
-      rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-    }
-  #elif defined DS1307
-    if (! rtc.isrunning()) {
-      Serial.println(F("RTC lost power, setting time to default"));
-      rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-    }
-  #endif
+#if defined DS3231
+  if (rtc.lostPower()) {
+    Serial.println(F("RTC lost power, setting time to default"));
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  }
+#elif defined DS1307
+  if (!rtc.isrunning()) {
+    Serial.println(F("RTC lost power, setting time to default"));
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  }
+#endif
 
   getRTCTime();
 
@@ -682,7 +682,7 @@ void loop() {
 
     if ((millis() - lastBlink) > blinkInterval) {
       lastBlink  = millis();
-      blinkState = true; // don't blink the color chooser
+      blinkState = true;   // don't blink the color chooser
 
       if (blinkState) {
         displayDigit(hourTensMax, hourTensColor, 0, hourTensLEDs, hourTensMax, false);
@@ -744,7 +744,9 @@ void loop() {
     // (Inside menus it's handled by that code)
     if (menuPosition == 0) {
       brightness += brightnessStep;
-      if ((brightness > brightnessMax) || (brightness < brightnessMin)) { brightness = brightnessMin; }
+      if ((brightness > brightnessMax) || (brightness < brightnessMin)) {
+        brightness = brightnessMin;
+      }
 
       strip.setBrightness(brightness);
       strip.show();   // Update brightness immediately
@@ -945,9 +947,9 @@ void setColorScheme(void) {
       break;
     case 4:   // Purple/blue
       hourTensColor   = strip.Color(129, 13, 112);
-      hourOnesColor   = strip.Color(73, 29, 118); //clrPurple; // strip.Color(139, 0, 139);
+      hourOnesColor   = strip.Color(73, 29, 118);   // clrPurple; // strip.Color(139, 0, 139);
       minuteTensColor = strip.Color(23, 46, 124);
-      minuteOnesColor = strip.Color(13, 175, 186); //clrBlue;
+      minuteOnesColor = strip.Color(13, 175, 186);   // clrBlue;
       break;
     case 5:   // Christmas
       hourTensColor   = clrRed;
